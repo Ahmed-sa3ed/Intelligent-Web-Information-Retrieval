@@ -1,0 +1,14 @@
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+test_reports/
+.env
+.env.*
+!*.env.example
+chatgpt-connection.json
+hf-cache/
+.qodo/
+*.zip
+*.before-*

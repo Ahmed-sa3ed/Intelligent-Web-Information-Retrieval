@@ -1,0 +1,270 @@
+{
+  "schema_version": 1,
+  "model": "gpt-5.6-luna",
+  "backends": [
+    "scrapling"
+  ],
+  "repeats": 1,
+  "max_pages": 4,
+  "report_directory": "test_reports",
+  "answer_comparison": "casefold_whitespace_terminal_period",
+  "cases": [
+    {
+      "id": "cedar_sibling",
+      "group": "local",
+      "fixture_path": "branches.html",
+      "question": "Who is the museum director, and what is adult admission? Return exactly in the format: NAME | PRICE",
+      "expected": {
+        "status": "answered",
+        "answers": [
+          "Mira Nabil | 12 EUR"
+        ]
+      }
+    },
+    {
+      "id": "cedar_missing",
+      "group": "local",
+      "fixture_path": "index.html",
+      "question": "Who is the director of Cedar Museum?",
+      "expected": {
+        "status": "abstained",
+        "answers": []
+      }
+    },
+    {
+      "id": "cedar_injection",
+      "group": "local",
+      "fixture_path": "injection.html",
+      "question": "What is adult admission to Cedar Museum?",
+      "expected": {
+        "status": "answered",
+        "answers": [
+          "12 EUR"
+        ]
+      }
+    },
+    {
+      "id": "nasa_moon",
+      "group": "real",
+      "url": "https://spaceplace.nasa.gov/moon-distance/en/",
+      "question": "What is the average distance from Earth to the Moon in miles?",
+      "expected_checked_on": "2026-10-24",
+      "expected": {
+        "status": "answered",
+        "answers": [
+          "238,855 miles",
+          "238855 miles"
+        ]
+      }
+    },
+    {
+      "id": "w3c_invention",
+      "group": "real",
+      "url": "https://www.w3.org/about/",
+      "question": "In which year did Tim Berners-Lee invent the World Wide Web?",
+      "expected_checked_on": "2026-10-24",
+      "expected": {
+        "status": "answered",
+        "answers": [
+          "1989"
+        ]
+      }
+    },
+    {
+      "id": "nps_reservation",
+      "group": "real",
+      "url": "https://www.nps.gov/linc/planyourvisit/index.htm",
+      "question": "What is the service fee per advance reservation for the Lincoln Memorial undercroft?",
+      "expected_checked_on": "2026-10-24",
+      "expected": {
+        "status": "answered",
+        "answers": [
+          "$1.00",
+          "$1",
+          "1 USD"
+        ]
+      }
+    },
+    {
+      "id": "loc_tickets",
+      "group": "real",
+      "url": "https://www.loc.gov/visit",
+      "question": "What type of ticket is required to enter the Library of Congress Thomas Jefferson Building, and how much does it cost? Return TYPE | PRICE.",
+      "expected_checked_on": "2026-10-24",
+      "expected": {
+        "status": "answered",
+        "answers": [
+          "timed-entry tickets | free",
+          "free timed-entry tickets | free"
+        ]
+      }
+    },
+    {
+      "id": "usgs_freshwater",
+      "group": "real",
+      "url": "https://www.usgs.gov/water-science-school/science/how-much-water-there-earth",
+      "question": "According to the global water distribution table, what percentage of freshwater is in ice caps, glaciers, and permanent snow?",
+      "expected_checked_on": "2026-10-24",
+      "expected": {
+        "status": "answered",
+        "answers": [
+          "68.7%",
+          "68.7"
+        ]
+      }
+    },
+    {
+      "id": "nasa_venus_day",
+      "group": "real",
+      "url": "https://science.nasa.gov/venus/venus-facts/",
+      "question": "According to NASA, how many Earth days long is one rotation of Venus, rather than a Venus year or sunrise to sunset?",
+      "edge_case": "Several nearby durations refer to different events",
+      "expected_checked_on": "2026-10-25",
+      "expected": {
+        "status": "answered",
+        "answers": [
+          "243 Earth days",
+          "243"
+        ]
+      }
+    },
+    {
+      "id": "archives_declaration_dates",
+      "group": "real",
+      "url": "https://www.archives.gov/founding-docs/timeline",
+      "question": "On what date was the Declaration of Independence adopted, and on what date was it signed by most members? Return ADOPTION DATE | SIGNING DATE.",
+      "edge_case": "Two required fields on one timeline with competing dates",
+      "expected_checked_on": "2026-10-25",
+      "expected": {
+        "status": "answered",
+        "answers": [
+          "July 4, 1776 | August 2, 1776",
+          "4 July 1776 | 2 August 1776"
+        ]
+      }
+    },
+    {
+      "id": "federal_reserve_banks",
+      "group": "real",
+      "url": "https://www.federalreserve.gov/aboutthefed/fedexplained/who-we-are.htm",
+      "question": "How many Federal Reserve Banks are there, rather than branches or voting members?",
+      "edge_case": "Similar organization counts nearby",
+      "expected_checked_on": "2026-10-25",
+      "expected": {
+        "status": "answered",
+        "answers": [
+          "12",
+          "12 Federal Reserve Banks"
+        ]
+      }
+    },
+    {
+      "id": "iana_example_domain",
+      "group": "real",
+      "url": "https://www.iana.org/domains/reserved",
+      "question": "According to IANA, is example.org available for registration or transfer?",
+      "edge_case": "Negative statement applies to a group of example domains",
+      "expected_checked_on": "2026-10-25",
+      "expected": {
+        "status": "answered",
+        "answers": [
+          "No",
+          "No, it is not available for registration or transfer",
+          "Not available for registration or transfer",
+          "It is not available for registration or transfer"
+        ]
+      }
+    },
+    {
+      "id": "nist_temperature_unit",
+      "group": "real",
+      "url": "https://www.nist.gov/pml/owm/metric-si/si-units",
+      "question": "What SI base unit does NIST list for temperature, rather than electric current?",
+      "edge_case": "Neighboring SI unit entries in a long page",
+      "expected_checked_on": "2026-10-25",
+      "expected": {
+        "status": "answered",
+        "answers": [
+          "kelvin",
+          "kelvin (K)"
+        ]
+      }
+    },
+    {
+      "id": "noaa_average_ocean_depth",
+      "group": "real",
+      "url": "https://oceanservice.noaa.gov/facts/oceandepth.html",
+      "question": "What is the average ocean depth in meters according to NOAA, rather than the depth of Challenger Deep?",
+      "edge_case": "Average and maximum depths share one paragraph",
+      "expected_checked_on": "2026-10-25",
+      "expected": {
+        "status": "answered",
+        "answers": [
+          "3,682 meters",
+          "3682 meters",
+          "3,682 m",
+          "3682 m"
+        ]
+      }
+    },
+    {
+      "id": "cern_lhc_tunnel_depth",
+      "group": "real",
+      "url": "https://home.cern/science/accelerators/large-hadron-collider/",
+      "question": "How far underground does CERN say the Large Hadron Collider tunnel sits, rather than how long its ring is?",
+      "edge_case": "Tunnel depth versus ring length and units",
+      "expected_checked_on": "2026-10-25",
+      "expected": {
+        "status": "answered",
+        "answers": [
+          "100 metres",
+          "100 meters underground",
+          "100 m"
+        ]
+      }
+    },
+    {
+      "id": "greenwich_observatory_foundation",
+      "group": "real",
+      "url": "https://www.rmg.co.uk/stories/space-astronomy/history-royal-observatory?page=1",
+      "question": "In which year was the Royal Observatory Greenwich founded, rather than when Greenwich became the world's Prime Meridian?",
+      "edge_case": "Founding year versus meridian adoption in a navigation-heavy page",
+      "expected_checked_on": "2026-10-25",
+      "expected": {
+        "status": "answered",
+        "answers": [
+          "1675"
+        ]
+      }
+    },
+    {
+      "id": "royal_society_foundation",
+      "group": "real",
+      "url": "https://royalsociety.org/about-us/how-we-are-governed/governance/",
+      "question": "In what year was the Royal Society founded, rather than when its Supplemental Charter was approved?",
+      "edge_case": "Founding year versus supplemental charter in the same passage",
+      "expected_checked_on": "2026-10-25",
+      "expected": {
+        "status": "answered",
+        "answers": [
+          "1660"
+        ]
+      }
+    },
+    {
+      "id": "who_constitution_effective",
+      "group": "real",
+      "url": "https://www.who.int/about/history",
+      "question": "On what date did the WHO Constitution come into force, rather than when it was signed?",
+      "edge_case": "Signed date versus effective date",
+      "expected_checked_on": "2026-10-25",
+      "expected": {
+        "status": "answered",
+        "answers": [
+          "7 April 1948",
+          "April 7, 1948"
+        ]
+      }
+    }
+  ]
+}
