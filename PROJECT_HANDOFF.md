@@ -12,6 +12,10 @@ decision traces, accuracy first, then speed.
 - Scrapling and HTTP retrievers; site-local link navigation and GET forms.
 - Text chunks and structured table text; fact planning, extraction, quote
   grounding, semantic fallback, final per-field review, and abstention.
+- Answered results include ordered per-field `citations` with the verified
+  value, source URL, passage and exact/semantic support mode. The ask CLI prints
+  numbered citations; suite reports preserve them under `actual.citations`.
+  Abstentions do not expose citations.
 - Candidate confidence >= 0.95 for all fields prompts an early final review;
   approval can stop browsing, while rejection continues navigation.
 - Configurable maximum successful pages: agent_suite.json `max_pages`
@@ -41,3 +45,15 @@ The local test reports, .venv, credentials, old code snapshots and .qodo
 metadata are intentionally excluded from Git. They remain in the original
 Downloads folder if needed. This new workspace contains the active source and
 the local HTML test fixtures.
+
+## Citation feature verification (2026-10-25)
+- `python feature_selfcheck.py`: all 18 checks passed, covering early and final
+  citations, semantic passages,
+  distinct field sources, redirected URLs, rejected evidence, CLI output and
+  suite report serialization. No live model or website calls are used.
+- `python run_agent_suite.py --dry-run` and `git diff --check` passed.
+- `suite_selfcheck.py` remains blocked in this session by Windows denying its
+  localhost HTTP connection (WinError 10013); rerun outside this sandbox.
+- Live website and account-backed model checks have not been run for citations.
+- Commit/push pending: this session cannot create `.git/index.lock` (permission
+  denied). The citation changes remain in the working tree.

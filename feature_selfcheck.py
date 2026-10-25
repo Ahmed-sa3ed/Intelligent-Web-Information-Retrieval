@@ -103,7 +103,7 @@ long_text = ("Museum history.\n" * 850) + "Adult admission: 12 EUR."
 with redirect_stdout(io.StringIO()) as output:
     result = agent.run_agent("What is adult admission?", url, model, None,
                              fetch_page_fn=lambda target: page(target, long_text))
-assert result == {"status": "answered", "answer": "12 EUR"}
+assert result["status"] == "answered" and result["answer"] == "12 EUR"
 assert model.read_chunks > 1, model.read_chunks
 assert "chunks:" in output.getvalue()
 print("PASS: long page inspects later text chunks and answers")
@@ -123,7 +123,7 @@ with patch.object(agent, "choose_link", return_value=0):
     with redirect_stdout(io.StringIO()) as output:
         result = agent.run_agent("What is adult admission?", url,
                                  Model(), None, fetch_page_fn=recover)
-assert result == {"status": "answered", "answer": "12 EUR"}, result
+assert result["status"] == "answered" and result["answer"] == "12 EUR", result
 assert "image/png" in output.getvalue()
 print("PASS: unsupported image is logged and another link provides the answer")
 
@@ -146,6 +146,7 @@ with redirect_stdout(io.StringIO()) as output:
         Model(invalid_final=True), None,
         fetch_page_fn=lambda target: page(target, "Adult admission: 12 EUR."))
 assert result["status"] == "abstained" and result["answer"] == ""
+assert not result.get("citations")
 assert result["selection_failures"][0]["grounded_candidate_count"] == 1
 assert "semantic review found insufficient support" in result["failure_reason"]
 trace = output.getvalue()
@@ -295,7 +296,12 @@ with redirect_stdout(io.StringIO()) as output:
     single = agent.run_agent(semantic_request["question"],
         "https://example.org/policy", IntegratedSemanticModel(), None,
         fetch_page_fn=lambda target: page(target, semantic_page[target]["text"]))
-assert single == {"status": "answered", "answer": "No"}, single
+assert single["status"] == "answered" and single["answer"] == "No", single
+assert single["citations"] == [{
+    "field": "domain_availability", "value": "No",
+    "source_url": "https://example.org/policy", "quote": source_quote,
+    "support_mode": "semantic",
+}], single
 assert "Semantic review domain_availability" in output.getvalue()
 print("PASS: complete agent returns one semantically reviewed availability answer")
 
@@ -353,7 +359,7 @@ with redirect_stdout(io.StringIO()) as output:
     result = agent.run_agent("What is current adult admission?",
                              archive_url, EarlyReviewModel(), None,
                              fetch_page_fn=historical_fetch)
-assert result == {"status": "answered", "answer": "12 EUR"}, result
+assert result["status"] == "answered" and result["answer"] == "12 EUR", result
 assert fetched == [archive_url, current_url], fetched
 assert "Early review did not verify" in output.getvalue()
 print("PASS: high-scoring historical price is rejected and navigation continues")
@@ -363,8 +369,12 @@ with redirect_stdout(io.StringIO()) as output:
     result = agent.run_agent("What is current adult admission?",
                              current_url, EarlyReviewModel(), None,
                              fetch_page_fn=lambda target: fetched.append(target) or current)
-assert result == {"status": "answered", "answer": "12 EUR"}
+assert result["status"] == "answered" and result["answer"] == "12 EUR"
 assert fetched == [current_url]
+assert result["citations"] == [{
+    "field": "adult_admission", "value": "12 EUR", "source_url": current_url,
+    "quote": "Current prices: adult admission is 12 EUR.", "support_mode": "exact",
+}]
 assert "Early review approved | stopping after 1 page(s)" in output.getvalue()
 print("PASS: verified high-confidence answer stops after one page")
 
@@ -373,7 +383,7 @@ with redirect_stdout(io.StringIO()) as output:
     result = agent.run_agent("What is current adult admission?",
                              archive_url, EarlyReviewModel(old_score=0.949), None,
                              max_pages=2, fetch_page_fn=historical_fetch)
-assert result == {"status": "answered", "answer": "12 EUR"}
+assert result["status"] == "answered" and result["answer"] == "12 EUR"
 assert fetched == [archive_url, current_url]
 assert "Early review |" not in output.getvalue()
 print("PASS: a score below 0.95 does not trigger the early review")
@@ -384,4 +394,76 @@ with redirect_stdout(io.StringIO()) as output:
                              archive_url, EarlyReviewModel(), None,
                              max_pages=1, fetch_page_fn=historical_fetch)
 assert result["status"] == "abstained" and fetched == [archive_url]
+assert not result.get("citations")
 print("PASS: max_pages limits successful page fetches")
+
+
+# Distinct fields must keep their own final sources, including a redirected URL.
+class MultiSourceModel:
+    def generate(self, messages):
+        request = json.loads(messages[-1]["content"])
+        if "request_to_analyze" in request:
+            return json.dumps({"required_fields": ["director", "admission"]})
+        if "page" in request:
+            return "{}"
+        if "target_field" in request:
+            field = request["target_field"]
+            index, value, quote = (
+                (0, "Maya Chen", "Director: Maya Chen.") if field == "director"
+                else (1, "14 EUR", "Adult admission: 14 EUR.")
+            )
+            return json.dumps({"page_index": index, "answer": value, "quote": quote})
+        return '{"link_index": 0}'
+
+
+staff_url = "https://example.org/team"
+fees_url = "https://example.org/fees"
+redirected_url = "https://example.org/current-fees"
+source_pages = {
+    staff_url: page(staff_url, "Director: Maya Chen.",
+                    [{"url": fees_url, "text": "Admission"}]),
+    fees_url: page(redirected_url, "Adult admission: 14 EUR."),
+}
+with redirect_stdout(io.StringIO()):
+    result = agent.run_agent("Who is director and what is admission?", staff_url,
+                             MultiSourceModel(), None, max_pages=2,
+                             fetch_page_fn=source_pages.__getitem__)
+assert result == {
+    "status": "answered", "answer": "Maya Chen | 14 EUR",
+    "citations": [
+        {"field": "director", "value": "Maya Chen", "source_url": staff_url,
+         "quote": "Director: Maya Chen.", "support_mode": "exact"},
+        {"field": "admission", "value": "14 EUR", "source_url": redirected_url,
+         "quote": "Adult admission: 14 EUR.", "support_mode": "exact"},
+    ],
+}, result
+print("PASS: ordered citations retain each field's verified passage and final source URL")
+
+
+# Exercise CLI and report output with only model and HTTP boundaries replaced.
+import local_agent
+from run_agent_suite import run_case
+
+response = httpx.Response(200, request=httpx.Request("GET", url),
+                          text="<html><body>Adult admission: 12 EUR.</body></html>",
+                          headers={"content-type": "text/html"})
+with patch.object(retrieval.httpx, "get", return_value=response), \
+     patch.object(local_agent, "available_models", return_value=[{"slug": "offline"}]), \
+     patch.object(local_agent, "ChatGPTPlanModel", return_value=Model()), \
+     patch.object(sys, "argv", ["local_agent.py", "ask", url,
+                                "What is adult admission?", "--model", "offline"]), \
+     redirect_stdout(io.StringIO()) as output:
+    local_agent.main()
+rendered = output.getvalue()
+assert "Answer: 12 EUR" in rendered and "[1] adult_admission: 12 EUR" in rendered
+assert f"Source: {url}" in rendered and "Passage: Adult admission: 12 EUR." in rendered
+assert "Support: exact" in rendered
+case = {"id": "offline_citation", "group": "real", "url": url,
+        "question": "What is adult admission?",
+        "expected": {"status": "answered", "answers": ["12 EUR"]}}
+with patch.object(retrieval.httpx, "get", return_value=response):
+    row = run_case(case, "original", Model(), None, 1)
+assert row["passed"], row
+assert row["actual"]["citations"][0]["quote"] == "Adult admission: 12 EUR."
+assert json.loads(json.dumps(row))["actual"]["citations"][0]["source_url"] == url
+print("PASS: CLI displays citations and suite reports preserve them without changing answer scoring")

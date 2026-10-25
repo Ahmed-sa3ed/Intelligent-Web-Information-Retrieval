@@ -127,6 +127,21 @@ def fetch_with_retry(url, fetch_page_fn, max_attempts=2):
             sleep(0.25 * attempt)
 
 
+def answered_result(required_fields, selected):
+    """Expose only final verified evidence, in the requested answer order."""
+    return {
+        "status": "answered",
+        "answer": " | ".join(selected[field]["value"] for field in required_fields),
+        "citations": [
+            {"field": field, "value": selected[field]["value"],
+             "source_url": selected[field]["source_url"],
+             "quote": selected[field]["quote"],
+             "support_mode": selected[field].get("support_mode", "exact")}
+            for field in required_fields
+        ],
+    }
+
+
 def run_agent(question, start_url, model, tokenizer, *,
               fetch_page_fn=None, max_pages=4, early_answer_confidence=0.95):
     """Browse up to max_pages and review strong complete evidence early."""
@@ -238,11 +253,9 @@ def run_agent(question, start_url, model, tokenizer, *,
                 "diagnostics": [],
             }, model, tokenizer)
             if early_selected is not None:
-                answer = " | ".join(early_selected[field]["value"]
-                                    for field in required_fields)
                 print("Early review approved | stopping after", successful_pages,
                       "page(s)")
-                return {"status": "answered", "answer": answer}
+                return answered_result(required_fields, early_selected)
             print("Early review did not verify every field | continuing navigation")
 
         current_url = choose_next_url(
@@ -282,5 +295,4 @@ def run_agent(question, start_url, model, tokenizer, *,
             print("Abstaining: final evidence review did not verify every field. "
                   "See the field-level validation logs above.")
         return result
-    answer = " | ".join(selected[field]["value"] for field in required_fields)
-    return {"status": "answered", "answer": answer}
+    return answered_result(required_fields, selected)

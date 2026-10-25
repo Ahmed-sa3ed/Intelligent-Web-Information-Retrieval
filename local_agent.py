@@ -49,8 +49,15 @@ def main():
         if not 1 <= args.max_pages <= 20:
             parser.error("--max-pages must be from 1 to 20.")
         from agent import run_agent
-        print("Result:", run_agent(args.question, args.url, model, None,
-                                   max_pages=args.max_pages))
+        result = run_agent(args.question, args.url, model, None,
+                           max_pages=args.max_pages)
+        print("Answer:" if result["status"] == "answered" else "Abstained:",
+              result["answer"] or result.get("failure_reason", "Insufficient verified evidence."))
+        for number, citation in enumerate(result.get("citations", []), 1):
+            print(f"[{number}] {citation['field']}: {citation['value']}")
+            print(f"    Source: {citation['source_url']}")
+            print(f"    Passage: {citation['quote']}")
+            print(f"    Support: {citation['support_mode']}")
         return
 
     server = _serve_fixtures()
@@ -62,7 +69,7 @@ def main():
                 "What is adult admission to Cedar Museum?", url, model, None
             )
             print("Result:", result)
-            if result != {"status": "answered", "answer": "12 EUR"}:
+            if result["status"] != "answered" or result["answer"] != "12 EUR":
                 raise SystemExit("Smoke check failed: model output differs from checkpoint.")
         else:
             from checks import run_checks

@@ -34,3 +34,21 @@ written under `test_reports/`, which is excluded from Git.
 
 See [PROJECT_HANDOFF.md](PROJECT_HANDOFF.md) for the project state and the
 next feature discussion.
+
+## Answer citations
+
+`run_agent` keeps the existing `status` and `answer` fields. Answered results
+also include a `citations` list in requested-field order. Each citation contains
+`field`, `value`, `source_url`, `quote`, and `support_mode` (`exact` or `semantic`).
+The URL comes from the fetched page, including an accepted redirect; the quote
+is the actual extracted page passage checked by the final evidence review.
+Semantic support means the answer was approved by the semantic reviewer and
+the quote was matched against the page; it does not require the answer text to
+occur literally in the quote. Citations reuse that review without extra model
+calls. They do not independently prove that a source's claims are true.
+
+The `local_agent.py ask` command prints the answer followed by numbered sources
+and supporting passages. Suite JSON reports retain citations under each run's
+`actual.citations`; answer comparisons still use only status and answer text.
+Abstained results contain no citations, including when some candidates were
+found but the final review could not verify every requested field.
