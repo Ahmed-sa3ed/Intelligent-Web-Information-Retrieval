@@ -42,6 +42,7 @@ def fetch_page(url: str) -> dict:
     final_url = str(response.url)
     html = response.body.decode(response.encoding or "utf-8", errors="replace")
     forms = parse_search_forms(html, final_url)
+    has_scripts = bool(BeautifulSoup(html, "html.parser").find("script"))
 
     # Scrapling parses the title, links and visible text. Keep the established
     # table formatter, so the two versions differ in retrieval and DOM parsing
@@ -83,4 +84,5 @@ def fetch_page(url: str) -> dict:
         "links": links,
         "links_truncated": False,
         "forms": forms,
+        "render_hint": has_scripts and len(text) < 600,
     }

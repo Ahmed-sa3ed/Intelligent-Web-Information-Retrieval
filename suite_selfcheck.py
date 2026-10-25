@@ -238,7 +238,7 @@ with TemporaryDirectory(prefix="parallel-suite-", dir=PROJECT) as scratch:
     guard = Lock()
 
     def fake_agent(question, start_url, model, tokenizer, *,
-                   fetch_page_fn, max_pages):
+                   fetch_page_fn, render_page_fn, max_pages):
         assert max_pages == 2
         global active, peak
         with guard:

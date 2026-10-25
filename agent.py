@@ -13,6 +13,7 @@ from navigation import choose_link, choose_route
 from page_chunks import text_chunks
 from planning import plan_task
 from retrieval import UnsupportedContentTypeError, fetch_page
+from retrieval_browser import BrowserRenderError, render_page
 from search_navigation import choose_search
 
 
@@ -142,8 +143,33 @@ def answered_result(required_fields, selected):
     }
 
 
+def inspect_page(question, required_fields, page, model, tokenizer,
+                 candidate_reviews, found_fields, page_number):
+    chunks = list(text_chunks(page["text"]))
+    print(f"Page {page_number} | {page['url']} | "
+          f"characters: {len(page['text'])} | chunks: {len(chunks)} | "
+          f"links: {len(page['links'])}")
+    page_found = set()
+    for number, chunk in enumerate(chunks, 1):
+        missing = [field for field in required_fields if field not in page_found]
+        if not missing:
+            break
+        chunk_page = {**page, "text": chunk}
+        request = {"question": question, "required_fields": missing,
+                   "page": {"url": page["url"], "text": chunk}}
+        before = len(page_found)
+        page_found.update(candidate_fields(
+            request, chunk_page, model, tokenizer, reviews=candidate_reviews))
+        found_fields.update(page_found)
+        print(f"Chunk {number}/{len(chunks)} | {page['url']} | "
+              f"new grounded fields: {len(page_found) - before} | "
+              f"still missing: {[field for field in required_fields if field not in found_fields]}")
+    return page_found
+
+
 def run_agent(question, start_url, model, tokenizer, *,
-              fetch_page_fn=None, max_pages=4, early_answer_confidence=0.95):
+              fetch_page_fn=None, render_page_fn=render_page,
+              max_pages=4, early_answer_confidence=0.95):
     """Browse up to max_pages and review strong complete evidence early."""
     if type(max_pages) is not int or not 1 <= max_pages <= 20:
         raise ValueError("max_pages must be an integer between 1 and 20.")
@@ -208,27 +234,51 @@ def run_agent(question, start_url, model, tokenizer, *,
         last_page = page
         successful_pages += 1
 
-        chunks = list(text_chunks(page["text"]))
-        print(f"Page {successful_pages} | {page['url']} | "
-              f"characters: {len(page['text'])} | chunks: {len(chunks)} | "
-              f"links: {len(page['links'])}")
-        page_found = set()
-        for number, chunk in enumerate(chunks, 1):
-            missing = [field for field in required_fields if field not in page_found]
-            if not missing:
-                break
-            chunk_page = {**page, "text": chunk}
-            request = {
-                "question": question, "required_fields": missing,
-                "page": {"url": page["url"], "text": chunk},
-            }
-            before = len(page_found)
-            page_found.update(candidate_fields(
-                request, chunk_page, model, tokenizer, reviews=candidate_reviews))
-            found_fields.update(page_found)
-            print(f"Chunk {number}/{len(chunks)} | {page['url']} | "
-                  f"new grounded fields: {len(page_found) - before} | "
-                  f"still missing: {[field for field in required_fields if field not in found_fields]}")
+        page_found = inspect_page(
+            question, required_fields, page, model, tokenizer,
+            candidate_reviews, found_fields, successful_pages,
+        )
+        if (render_page_fn is not None and page.get("render_hint")
+                and any(field not in found_fields for field in required_fields)):
+            print(f"Browser fallback | sparse script page | {page['url']}")
+            try:
+                rendered = render_page_fn(page["url"], len(page["text"]))
+            except (BrowserRenderError, UnsupportedContentTypeError) as exc:
+                print(f"Browser fallback failed | {page['url']} | {exc}")
+            else:
+                if not same_origin(rendered["url"], start_url):
+                    print(f"Browser fallback rejected off-origin redirect | {rendered['url']}")
+                elif (rendered["text"] == page["text"]
+                      and rendered["links"] == page["links"]
+                      and rendered["forms"] == page["forms"]):
+                    print(f"Browser fallback found no new content | {page['url']}")
+                else:
+                    old_url = page["url"]
+                    if page["text"] and page["text"] not in rendered["text"]:
+                        rendered["text"] = page["text"] + "\n\n" + rendered["text"]
+                    known_links = {link["url"] for link in rendered["links"]}
+                    rendered["links"].extend(
+                        link for link in page["links"]
+                        if link["url"] not in known_links
+                    )
+                    known_forms = {json.dumps(form, sort_keys=True)
+                                   for form in rendered["forms"]}
+                    rendered["forms"].extend(
+                        form for form in page["forms"]
+                        if json.dumps(form, sort_keys=True) not in known_forms
+                    )
+                    page = rendered
+                    page["url"] = canonical_url(page["url"])
+                    pages.pop(old_url)
+                    pages[page["url"]] = page
+                    visited.add(page["url"])
+                    last_page = page
+                    print(f"Browser fallback used | {page['url']} | "
+                          f"characters: {len(page['text'])}")
+                    page_found.update(inspect_page(
+                        question, required_fields, page, model, tokenizer,
+                        candidate_reviews, found_fields, successful_pages,
+                    ))
 
         missing_fields = [field for field in required_fields if field not in found_fields]
         navigation_fields = missing_fields or required_fields

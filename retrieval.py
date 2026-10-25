@@ -3,7 +3,7 @@ from urllib.parse import urljoin, urlsplit
 import httpx
 from bs4 import BeautifulSoup
 
-from forms import parse_search_forms  # NEW
+from forms import parse_search_forms
 from tables import format_simple_tables
 
 
@@ -27,11 +27,16 @@ def fetch_page(url: str) -> dict:
     if "text/html" not in content_type:
         raise UnsupportedContentTypeError(f"Expected HTML, received: {content_type}")
 
-    # NEW: inspect the downloaded HTML before reducing it to page text.
-    forms = parse_search_forms(response.text, str(response.url))
+    return parse_page(response.text, str(response.url))
 
-    soup = BeautifulSoup(response.text, "html.parser")
+
+def parse_page(html: str, url: str) -> dict:
+    """Parse static or rendered HTML into the evidence page contract."""
+    forms = parse_search_forms(html, url)
+
+    soup = BeautifulSoup(html, "html.parser")
     title = soup.title.get_text(" ", strip=True) if soup.title else ""
+    has_scripts = bool(soup.find("script"))
 
     for element in soup.select("script, style, template"):
         element.decompose()
@@ -40,7 +45,7 @@ def fetch_page(url: str) -> dict:
     seen = set()
     content_anchors = soup.select("main a[href], article a[href]")
     for anchor in content_anchors + soup.select("a[href]"):
-        target = urljoin(str(response.url), anchor["href"])
+        target = urljoin(url, anchor["href"])
         if urlsplit(target).scheme not in {"http", "https"}:
             continue
         if target in seen:
@@ -54,8 +59,6 @@ def fetch_page(url: str) -> dict:
     table_rows = format_simple_tables(soup)
     text = soup.get_text("\n", strip=True)
 
-    # Put labeled table rows where the model sees them early.
-    # Limit this prefix so ordinary page text still has room.
     promoted = []
     size = 0
     for row in table_rows:
@@ -66,11 +69,12 @@ def fetch_page(url: str) -> dict:
     if promoted:
         text = "\n".join(promoted) + "\n\n" + text
     return {
-        "url": str(response.url),
+        "url": url,
         "title": title,
         "text": text,
         "text_truncated": False,
         "links": links,
         "links_truncated": False,
-        "forms": forms,  # NEW
+        "forms": forms,
+        "render_hint": has_scripts and len(text) < 600,
     }

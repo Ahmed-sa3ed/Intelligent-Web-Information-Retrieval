@@ -34,9 +34,9 @@ changes. Keep code changes small, commit each logical change and push once the
 GitHub remote has been connected.
 
 ## Next feature to discuss
-Adaptive retrieval: use fast static Scrapling by default; when useful content
-is absent, consider browser rendering and browser-observed API responses.
-Compare new static and dynamic websites for accuracy, latency, and requests.
+Browser rendering now retries sparse script pages after static extraction fails.
+Next, evaluate dynamic sites against static-only runs, then consider observed
+API responses and improved detection for dense JavaScript shells.
 Other ideas: read PDFs; resolve contradictory evidence and freshness; improve
 answer formatting; return sources and supporting passages alongside answers.
 
@@ -52,8 +52,17 @@ the local HTML test fixtures.
   distinct field sources, redirected URLs, rejected evidence, CLI output and
   suite report serialization. No live model or website calls are used.
 - `python run_agent_suite.py --dry-run` and `git diff --check` passed.
-- `suite_selfcheck.py` remains blocked in this session by Windows denying its
-  localhost HTTP connection (WinError 10013); rerun outside this sandbox.
+- `suite_selfcheck.py` passed in the subsequent workspace session.
 - Live website and account-backed model checks have not been run for citations.
-- Commit/push pending: this session cannot create `.git/index.lock` (permission
-  denied). The citation changes remain in the working tree.
+- Citation feature was committed as `68f76d5`.
+
+## Adaptive rendering checkpoint
+
+- `adaptive_selfcheck.py` covers sparse-page rendering, static answers,
+  browser failure, off-origin redirects, preservation of static evidence,
+  and suite baseline metrics.
+- `feature_selfcheck.py` and `suite_selfcheck.py` are the other offline checks.
+- The current session lacks a Playwright Chromium binary, so browser execution
+  and live-site comparison need validation after the documented install.
+- The user's edit to the CERN expected answer in `agent_suite.json` predates
+  this work and should remain intact.

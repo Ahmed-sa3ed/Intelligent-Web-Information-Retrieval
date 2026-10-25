@@ -179,11 +179,13 @@ def fetcher_for(backend):
     return fetch_page
 
 
-def run_case(case, backend, model, local_base, repeat, *, max_pages=4):
+def run_case(case, backend, model, local_base, repeat, *,
+             max_pages=4, static_only=False):
     url = (urljoin(local_base, case["fixture_path"])
            if case["group"] == "local" else case["url"])
     fetch = fetcher_for(backend)
-    metrics = {"fetch_attempts": 0, "pages": 0, "retrieval_seconds": 0.0}
+    metrics = {"fetch_attempts": 0, "pages": 0, "browser_attempts": 0,
+               "browser_seconds": 0.0, "retrieval_seconds": 0.0}
 
     def timed_fetch(target):
         metrics["fetch_attempts"] += 1
@@ -194,6 +196,17 @@ def run_case(case, backend, model, local_base, repeat, *, max_pages=4):
             return page
         finally:
             metrics["retrieval_seconds"] += perf_counter() - started
+
+    def timed_render(target, static_length):
+        from retrieval_browser import render_page
+        metrics["browser_attempts"] += 1
+        started = perf_counter()
+        try:
+            return render_page(target, static_length)
+        finally:
+            elapsed = perf_counter() - started
+            metrics["browser_seconds"] += elapsed
+            metrics["retrieval_seconds"] += elapsed
 
     decisions = []
 
@@ -214,7 +227,9 @@ def run_case(case, backend, model, local_base, repeat, *, max_pages=4):
     try:
         with capture_case_output(buffer):
             result = run_agent(case["question"], url, ObservedModel(), None,
-                               fetch_page_fn=timed_fetch, max_pages=max_pages)
+                               fetch_page_fn=timed_fetch,
+                               render_page_fn=None if static_only else timed_render,
+                               max_pages=max_pages)
         error = None
     except Exception as exc:
         result = {"status": "error", "answer": ""}
@@ -229,6 +244,8 @@ def run_case(case, backend, model, local_base, repeat, *, max_pages=4):
         "retrieval_seconds": round(metrics["retrieval_seconds"], 3),
         "other_seconds": round(max(0.0, elapsed - metrics["retrieval_seconds"]), 3),
         "fetch_attempts": metrics["fetch_attempts"], "pages_fetched": metrics["pages"],
+        "browser_attempts": metrics["browser_attempts"],
+        "browser_seconds": round(metrics["browser_seconds"], 3),
         "error": error, "decisions": decisions, "trace": buffer.getvalue(),
     }
 
@@ -274,6 +291,8 @@ def main(argv=None):
                         help="Maximum successfully fetched pages per case (1-20).")
     parser.add_argument("--workers", type=int, default=1,
                         help="Run up to this many independent cases concurrently (1-4; default 1).")
+    parser.add_argument("--static-only", action="store_true",
+                        help="Disable browser rendering for baseline comparison.")
     parser.add_argument("--dry-run", action="store_true", help="Show plan without network or model calls.")
     args = parser.parse_args(argv)
     try:
@@ -326,7 +345,8 @@ def main(argv=None):
         if args.workers == 1:
             for case, backend, repeat in jobs:
                 print(f"Running {case['id']} | {backend} | {repeat}/{repeats}", flush=True)
-                row = run_case(case, backend, model, base, repeat, max_pages=max_pages)
+                row = run_case(case, backend, model, base, repeat,
+                               max_pages=max_pages, static_only=args.static_only)
                 rows.append(row)
                 label = "PASS" if row["passed"] else "FAIL"
                 print(f"  {label} | {row['total_seconds']}s | "
@@ -337,7 +357,7 @@ def main(argv=None):
                 futures = {}
                 for index, (case, backend, repeat) in enumerate(jobs):
                     future = pool.submit(run_case, case, backend, model, base, repeat,
-                                         max_pages=max_pages)
+                                         max_pages=max_pages, static_only=args.static_only)
                     futures[future] = index
                 completed = {}
                 for future in as_completed(futures):
@@ -357,7 +377,7 @@ def main(argv=None):
         "created_utc": datetime.now(timezone.utc).isoformat(),
         "config_file": str(args.config.resolve()), "model": model_slug,
         "backends": backends, "repeats": repeats, "workers": args.workers,
-        "max_pages": max_pages,
+        "max_pages": max_pages, "static_only": args.static_only,
         "answer_comparison": config["answer_comparison"],
         "summary": summary, "runs": rows,
     }

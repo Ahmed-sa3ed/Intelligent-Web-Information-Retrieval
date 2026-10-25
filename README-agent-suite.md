@@ -31,6 +31,7 @@ Useful options:
 - --model MODEL_SLUG and --repeats 2: override JSON settings for one run.
 - --max-pages 6: allow up to six successfully fetched pages per case.
 - --workers 2: run up to two independent website cases concurrently (default 1).
+- --static-only: disable browser fallback for an accuracy and timing baseline.
 
 Run the full suite with bounded concurrency after the current sequential run:
     
@@ -137,3 +138,9 @@ Increasing this limit gives difficult questions more room to navigate and can
 increase run time and website requests. Early review can stop sooner than the
 limit when sufficient evidence is confirmed. A higher confidence score never
 substitutes for the final review.
+
+Browser rendering is attempted only for sparse script pages that still lack
+requested facts. Install `requirements-browser.txt` and the Chromium binary
+as described in README.md. Each run records `browser_attempts` and
+`browser_seconds`; the total retrieval time includes browser time. A failed
+browser attempt retains the static page and is described in the case trace.

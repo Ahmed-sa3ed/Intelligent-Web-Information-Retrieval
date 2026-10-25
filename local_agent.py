@@ -26,6 +26,8 @@ def main():
     ask = sub.add_parser("ask", help="Answer a question using a website")
     ask.add_argument("url")
     ask.add_argument("question")
+    ask.add_argument("--static-only", action="store_true",
+                     help="Do not render sparse script-driven pages")
     ask.add_argument("--max-pages", type=int, default=4,
                      help="Maximum successfully fetched pages (1-20; default 4)")
     for name in ("ask", "smoke", "checks"):
@@ -49,7 +51,9 @@ def main():
         if not 1 <= args.max_pages <= 20:
             parser.error("--max-pages must be from 1 to 20.")
         from agent import run_agent
+        from retrieval_browser import render_page
         result = run_agent(args.question, args.url, model, None,
+                           render_page_fn=None if args.static_only else render_page,
                            max_pages=args.max_pages)
         print("Answer:" if result["status"] == "answered" else "Abstained:",
               result["answer"] or result.get("failure_reason", "Insufficient verified evidence."))

@@ -1,7 +1,7 @@
 # Match 4 web retrieval agent
 
 A local question-answering agent that navigates sites, uses Scrapling or HTTP
-retrieval, extracts evidence, and checks answers against page passages. It can
+retrieval with a browser fallback for sparse JavaScript pages, extracts evidence, and checks answers against page passages. It can
 follow links, submit GET search forms, read tables and long pages, abstain when
 support is missing, and log how it made each decision.
 
@@ -52,3 +52,29 @@ and supporting passages. Suite JSON reports retain citations under each run's
 `actual.citations`; answer comparisons still use only status and answer text.
 Abstained results contain no citations, including when some candidates were
 found but the final review could not verify every requested field.
+
+## Adaptive browser rendering
+
+Static HTTP or Scrapling retrieval runs first. When a page contains a script,
+its extracted text is under 600 characters, and requested facts remain missing,
+the agent tries headless Chromium once for that page. It waits up to five
+seconds for the visible text to grow, then parses the browser DOM through the
+same HTML evidence pipeline. Static passages and links remain available when
+rendering adds content. Rendering preserves the successful-page limit;
+its extra attempt and time appear in the trace and suite report.
+Browser failure, no new content, or an off-origin redirect leaves the static
+page available for navigation. A dense shell may not meet this conservative
+trigger; a page that loads content only after a click is not covered yet.
+
+Install the optional browser dependency and binary to activate the fallback:
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements-browser.txt
+.\.venv\Scripts\python.exe -m playwright install chromium
+```
+
+`local_agent.py ask --static-only` and `run_agent_suite.py --static-only`
+provide a baseline without rendering. The suite report records
+`browser_attempts` and `browser_seconds` per run; `retrieval_seconds` includes
+browser time. Compare the same questions with one suite worker to reduce timing
+noise. Run `python adaptive_selfcheck.py` for the offline fallback checks.
