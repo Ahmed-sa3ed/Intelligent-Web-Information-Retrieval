@@ -1,7 +1,8 @@
 # Match 4 web retrieval agent
 
-A local question-answering agent that navigates sites, uses Scrapling or HTTP
-retrieval with a browser fallback for sparse JavaScript pages, extracts evidence, and checks answers against page passages. It can
+A local question-answering agent that navigates sites using Scrapling HTTP
+fetching and a Scrapling browser fallback for sparse JavaScript pages, extracts
+evidence, and checks answers against page passages. It can
 follow links, submit GET search forms, read tables and long pages, abstain when
 support is missing, and log how it made each decision.
 
@@ -55,9 +56,9 @@ found but the final review could not verify every requested field.
 
 ## Adaptive browser rendering
 
-Static HTTP or Scrapling retrieval runs first. When a page contains a script,
+Scrapling HTTP retrieval runs first. When a page contains a script,
 its extracted text is under 600 characters, and requested facts remain missing,
-the agent tries headless Chromium once for that page. It waits up to five
+the agent tries Scrapling's headless StealthyFetcher once for that page. It waits up to five
 seconds for the visible text to grow, then parses the browser DOM through the
 same HTML evidence pipeline. Static passages and links remain available when
 rendering adds content. Rendering preserves the successful-page limit;
@@ -70,7 +71,7 @@ Install the optional browser dependency and binary to activate the fallback:
 
 ```powershell
 .\.venv\Scripts\python.exe -m pip install -r requirements-browser.txt
-.\.venv\Scripts\python.exe -m playwright install chromium
+.\.venv\Scripts\scrapling.exe install
 ```
 
 `local_agent.py ask --static-only` and `run_agent_suite.py --static-only`
@@ -78,3 +79,15 @@ provide a baseline without rendering. The suite report records
 `browser_attempts` and `browser_seconds` per run; `retrieval_seconds` includes
 browser time. Compare the same questions with one suite worker to reduce timing
 noise. Run `python adaptive_selfcheck.py` for the offline fallback checks.
+
+The `original` suite backend is a historical name for Scrapling HTTP fetching
+with the existing BeautifulSoup HTML parser; `scrapling` uses the same
+Scrapling HTTP fetcher with Scrapling selectors for text and links. HTML form
+and table formatting remains local parsing. Neither backend makes website
+requests through httpx. The model sign-in code still uses httpx for ChatGPT
+authentication and is separate from website retrieval.
+
+Scrapling also offers an optional MCP server for a model to choose browser
+actions and inspect sessions. This agent already controls navigation and checks
+source passages in Python, so it uses the Scrapling Python API directly. The
+MCP server is not required to run the project.

@@ -3,6 +3,7 @@ import io
 import json
 from contextlib import redirect_stdout
 from unittest.mock import patch
+import sys
 
 import httpx
 
@@ -83,11 +84,35 @@ html = "<html><body>" + "a" * 13000 + "Adult admission: 12 EUR." + "".join(
     f'<a href="/page-{n}">Page {n}</a>' for n in range(45)) + "</body></html>"
 response = httpx.Response(200, request=request, text=html,
                           headers={"content-type": "text/html"})
-with patch.object(retrieval.httpx, "get", return_value=response):
+from types import SimpleNamespace
+scrapling_response = SimpleNamespace(
+    status=200, headers={"content-type": "text/html"}, encoding="utf-8",
+    url=url, body=html.encode("utf-8"),
+)
+with patch.object(retrieval, "fetch_scrapling_response", return_value=scrapling_response):
     full = retrieval.fetch_page(url)
 assert len(full["text"]) > 12000 and "12 EUR" in full["text"]
 assert len(full["links"]) == 45
 print("PASS: original retriever retains long page text and all 45 links")
+
+# The actual HTTP boundary is Scrapling, including status and retry metadata.
+from types import ModuleType
+fake_fetchers = ModuleType("scrapling.fetchers")
+seen_http = []
+def fake_get(target, **options):
+    seen_http.append((target, options))
+    return scrapling_response
+fake_fetchers.Fetcher = type("Fetcher", (), {"get": staticmethod(fake_get)})
+fake_scrapling = ModuleType("scrapling")
+fake_scrapling.__path__ = []
+with patch.dict(sys.modules, {"scrapling": fake_scrapling,
+                              "scrapling.fetchers": fake_fetchers}):
+    actual = retrieval.fetch_page(url)
+assert actual["url"] == url and seen_http[0][0] == url
+assert seen_http[0][1]["retries"] == 1
+assert seen_http[0][1]["follow_redirects"] == "safe"
+print("PASS: website HTTP uses Scrapling Fetcher with bounded retry and safe redirects")
+
 
 with patch.object(agent, "choose_link", side_effect=[None, 0]) as chooser:
     chosen = agent.choose_next_url("admission", ["adult_admission"],
@@ -157,8 +182,6 @@ print("PASS: high-confidence candidate abstention records the model reply and re
 
 # Test the Scrapling adapter without requiring Scrapling in this Python environment.
 import importlib
-import sys
-from types import ModuleType
 from bs4 import BeautifulSoup
 
 class Selection(list):
@@ -192,15 +215,8 @@ class FakeScraplingResponse:
             node.decompose()
         return soup.get_text(separator, strip=strip)
 
-fake_package = ModuleType("scrapling")
-fake_package.__path__ = []
-fake_fetchers = ModuleType("scrapling.fetchers")
-fake_fetchers.Fetcher = type("Fetcher", (), {
-    "get": staticmethod(lambda *args, **kwargs: FakeScraplingResponse()),
-})
-with patch.dict(sys.modules, {"scrapling": fake_package,
-                              "scrapling.fetchers": fake_fetchers}):
-    scraper = importlib.import_module("retrieval_scrapling")
+scraper = importlib.import_module("retrieval_scrapling")
+with patch.object(scraper, "fetch_scrapling_response", return_value=FakeScraplingResponse()):
     fetched = scraper.fetch_page(url)
     assert len(fetched["text"]) > 12000 and "12 EUR" in fetched["text"]
     assert len(fetched["links"]) == 45
@@ -447,7 +463,9 @@ from run_agent_suite import run_case
 response = httpx.Response(200, request=httpx.Request("GET", url),
                           text="<html><body>Adult admission: 12 EUR.</body></html>",
                           headers={"content-type": "text/html"})
-with patch.object(retrieval.httpx, "get", return_value=response), \
+with patch.object(retrieval, "fetch_scrapling_response", return_value=SimpleNamespace(
+        status=200, headers={"content-type": "text/html"}, encoding="utf-8",
+        url=url, body=response.content)), \
      patch.object(local_agent, "available_models", return_value=[{"slug": "offline"}]), \
      patch.object(local_agent, "ChatGPTPlanModel", return_value=Model()), \
      patch.object(sys, "argv", ["local_agent.py", "ask", url,
@@ -461,7 +479,9 @@ assert "Support: exact" in rendered
 case = {"id": "offline_citation", "group": "real", "url": url,
         "question": "What is adult admission?",
         "expected": {"status": "answered", "answers": ["12 EUR"]}}
-with patch.object(retrieval.httpx, "get", return_value=response):
+with patch.object(retrieval, "fetch_scrapling_response", return_value=SimpleNamespace(
+        status=200, headers={"content-type": "text/html"}, encoding="utf-8",
+        url=url, body=response.content)):
     row = run_case(case, "original", Model(), None, 1)
 assert row["passed"], row
 assert row["actual"]["citations"][0]["quote"] == "Adult admission: 12 EUR."

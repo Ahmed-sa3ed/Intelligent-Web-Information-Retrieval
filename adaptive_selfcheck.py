@@ -3,6 +3,8 @@ import io
 import json
 from contextlib import redirect_stdout
 from unittest.mock import patch
+from types import SimpleNamespace, ModuleType
+import sys
 
 import httpx
 
@@ -88,44 +90,47 @@ response = httpx.Response(200, request=request, text=shell_html,
 case = {"id": "adaptive", "group": "real", "url": url,
         "question": "What is adult admission?",
         "expected": {"status": "answered", "answers": ["12 EUR"]}}
-with patch("retrieval.httpx.get", return_value=response), \
+with patch("retrieval.fetch_scrapling_response", return_value=SimpleNamespace(
+        status=200, headers={"content-type": "text/html"}, encoding="utf-8",
+        url=url, body=response.content)), \
      patch("retrieval_browser.render_page", return_value=rendered):
     row = run_case(case, "original", Model(), None, 1)
 assert row["passed"] and row["browser_attempts"] == 1
 assert row["actual"]["citations"][0]["quote"] == "Adult admission: 12 EUR."
-with patch("retrieval.httpx.get", return_value=response):
+with patch("retrieval.fetch_scrapling_response", return_value=SimpleNamespace(
+        status=200, headers={"content-type": "text/html"}, encoding="utf-8",
+        url=url, body=response.content)):
     baseline = run_case(case, "original", Model(), None, 1, static_only=True)
 assert not baseline["passed"] and baseline["browser_attempts"] == 0
 print("PASS: suite reports browser attempts and static-only baseline")
 
 
 # The renderer reads the final browser DOM and URL, then reuses HTML parsing.
-from types import SimpleNamespace
 from retrieval_browser import render_page
 
 class BrowserPage:
-    url = "https://example.org/current"
-    def goto(self, target, **kwargs):
-        return SimpleNamespace(ok=True, headers={"content-type": "text/html"})
     def wait_for_function(self, expression, **kwargs):
-        return None
-    def content(self):
-        return "<html><main>Adult admission: 12 EUR.</main></html>"
+        assert kwargs["arg"] == len(static["text"]) + 10
 
-class Browser:
-    def new_page(self):
-        return BrowserPage()
-    def close(self):
-        pass
+def fake_browser_fetch(target, **kwargs):
+    assert target == url and kwargs["timeout"] == 12000
+    kwargs["page_action"](BrowserPage())
+    return SimpleNamespace(
+        url="https://example.org/current", status=200,
+        headers={"content-type": "text/html"}, encoding="utf-8",
+        body=b"<html><main>Adult admission: 12 EUR.</main></html>",
+    )
 
-class Playwright:
-    chromium = SimpleNamespace(launch=lambda **kwargs: Browser())
-    def __enter__(self):
-        return self
-    def __exit__(self, *_):
-        pass
-
-with patch("playwright.sync_api.sync_playwright", return_value=Playwright()):
+fetchers = ModuleType("scrapling.fetchers")
+fetchers.StealthyFetcher = SimpleNamespace(fetch=fake_browser_fetch)
+scrapling = ModuleType("scrapling")
+scrapling.__path__ = []
+patchright = ModuleType("patchright")
+patchright.__path__ = []
+sync_api = ModuleType("patchright.sync_api")
+sync_api.TimeoutError = TimeoutError
+with patch.dict(sys.modules, {"scrapling": scrapling, "scrapling.fetchers": fetchers,
+                              "patchright": patchright, "patchright.sync_api": sync_api}):
     browser_page = render_page(url, len(static["text"]))
 assert browser_page["url"] == "https://example.org/current"
 assert "Adult admission: 12 EUR." in browser_page["text"]

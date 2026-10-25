@@ -27,7 +27,7 @@ Useful options:
 - --only real: run fifteen real website cases.
 - --case w3c_invention: run one named case.
 - --case archives_declaration_dates: test the two-date question alone.
-- --backends original scrapling: compare retrievers on the same cases.
+- --backends original scrapling: compare HTML parsers on the same Scrapling HTTP fetcher.
 - --model MODEL_SLUG and --repeats 2: override JSON settings for one run.
 - --max-pages 6: allow up to six successfully fetched pages per case.
 - --workers 2: run up to two independent website cases concurrently (default 1).
@@ -46,7 +46,7 @@ order. The report includes suite_wall_seconds alongside individual run times;
 compare the same case and backend across runs when evaluating accuracy.
 Start with two workers. A higher setting can cause service throttling and more
 requests to sites; four is the enforced maximum. Auth token refresh is
-serialized between threads. For fair retriever speed comparisons, run with
+serialized between threads. For fair parser speed comparisons, run with
 --workers 1 to avoid concurrent traffic changing each backend's timing. Existing runs continue using the code already
 loaded in their Python process; apply this change after they finish.
 
@@ -140,7 +140,7 @@ limit when sufficient evidence is confirmed. A higher confidence score never
 substitutes for the final review.
 
 Browser rendering is attempted only for sparse script pages that still lack
-requested facts. Install `requirements-browser.txt` and the Chromium binary
+requested facts. Install `requirements-browser.txt` and Scrapling's browser bundle
 as described in README.md. Each run records `browser_attempts` and
 `browser_seconds`; the total retrieval time includes browser time. A failed
 browser attempt retains the static page and is described in the case trace.

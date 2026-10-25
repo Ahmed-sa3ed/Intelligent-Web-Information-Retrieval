@@ -1,37 +1,21 @@
 """Scrapling HTTP retrieval compatible with the existing agent page contract.
 
-The browser fetcher is deliberately excluded from this first comparison: it
-would add rendering, hardware cost and site behavior the baseline does not have.
+This adapter uses Scrapling's Response selectors for page text and links.
+Browser rendering is handled by the separate Scrapling browser adapter.
 """
 from urllib.parse import urljoin, urlsplit
 
-import httpx
 from bs4 import BeautifulSoup
-from scrapling.fetchers import Fetcher
 
 from forms import parse_search_forms
 from tables import format_simple_tables
-from retrieval import UnsupportedContentTypeError
+from retrieval import UnsupportedContentTypeError, fetch_scrapling_response
 
 
 def fetch_page(url: str) -> dict:
     if urlsplit(url).scheme not in {"http", "https"}:
         raise ValueError("Only HTTP and HTTPS URLs are supported.")
-    request = httpx.Request("GET", url)
-    try:
-        response = Fetcher.get(
-            url, follow_redirects=True, timeout=10, retries=1,
-            stealthy_headers=False, impersonate=None, verify=True,
-        )
-    except Exception as exc:
-        # The agent already treats httpx network failures as recoverable.
-        raise httpx.RequestError(str(exc), request=request) from exc
-
-    if not 200 <= response.status < 300:
-        raise httpx.HTTPStatusError(
-            f"HTTP {response.status} for {url}", request=request,
-            response=httpx.Response(response.status, request=request),
-        )
+    response = fetch_scrapling_response(url)
     content_type = next(
         (value for key, value in response.headers.items()
          if key.lower() == "content-type"), ""

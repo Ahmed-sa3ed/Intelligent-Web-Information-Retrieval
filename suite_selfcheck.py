@@ -59,7 +59,13 @@ with local_fixture_server(True) as base:
     original_get = httpx.get
     def local_get(url, **kwargs):
         return original_get(url, trust_env=False, **kwargs)
-    with patch("retrieval.httpx.get", side_effect=local_get):
+    def local_fetch(url):
+        from types import SimpleNamespace
+        result = local_get(url, follow_redirects=True, timeout=10)
+        return SimpleNamespace(url=str(result.url), status=result.status_code,
+                               headers=result.headers, encoding=result.encoding,
+                               body=result.content)
+    with patch("retrieval.fetch_scrapling_response", side_effect=local_fetch):
         row = run_case(case, "original", model, base, 1)
 assert row["passed"], (row["error"], row["trace"])
 assert row["pages_fetched"] == 1 and row["fetch_attempts"] == 1
@@ -82,7 +88,7 @@ with TemporaryDirectory(prefix="suite-selfcheck-", dir=PROJECT) as scratch:
                return_value=[{"slug": "fake-model"}]), \
          patch("run_agent_suite.ChatGPTPlanModel",
                side_effect=lambda slug: FakeModel()), \
-         patch("retrieval.httpx.get", side_effect=local_get):
+         patch("retrieval.fetch_scrapling_response", side_effect=local_fetch):
         assert main(["--model", "fake-model", "--case", "cedar_injection",
                      "--backends", "original"]) == 0
     saved = json.loads((Path(scratch) / "latest.json").read_text(encoding="utf-8"))

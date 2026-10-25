@@ -1,2 +1,1 @@
 -r requirements-scrapling.txt
-playwright>=1.55,<2

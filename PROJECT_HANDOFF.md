@@ -9,7 +9,7 @@ decision traces, accuracy first, then speed.
 ## Current behavior
 - Windows local version with ChatGPT Plus sign-in; account credentials are
   outside the project. The AMD GPU notebook is an earlier checkpoint.
-- Scrapling and HTTP retrievers; site-local link navigation and GET forms.
+- Scrapling HTTP fetching and Scrapling browser rendering; site-local links and GET forms.
 - Text chunks and structured table text; fact planning, extraction, quote
   grounding, semantic fallback, final per-field review, and abstention.
 - Answered results include ordered per-field `citations` with the verified
@@ -62,7 +62,17 @@ the local HTML test fixtures.
   browser failure, off-origin redirects, preservation of static evidence,
   and suite baseline metrics.
 - `feature_selfcheck.py` and `suite_selfcheck.py` are the other offline checks.
-- The current session lacks a Playwright Chromium binary, so browser execution
+- The current session lacks the Scrapling browser bundle, so browser execution
   and live-site comparison need validation after the documented install.
 - The user's edit to the CERN expected answer in `agent_suite.json` predates
   this work and should remain intact.
+
+## Scrapling-only website interaction
+
+Both suite backends now fetch websites through Scrapling `Fetcher`. The
+`original` name preserves historical parser comparisons; the other backend
+uses Scrapling selectors. Sparse JavaScript pages use Scrapling
+`StealthyFetcher` with a bounded wait. The optional MCP server was reviewed;
+this agent calls Scrapling's Python API directly to retain existing evidence
+checks and deterministic control. The browser bundle and a live dynamic-site
+run are still needed for end-to-end browser verification.

@@ -16,18 +16,36 @@ def fetch_page(url: str) -> dict:
     if urlsplit(url).scheme not in {"http", "https"}:
         raise ValueError("Only HTTP and HTTPS URLs are supported.")
 
-    response = httpx.get(
-        url,
-        follow_redirects=True,
-        timeout=10,
-    )
-    response.raise_for_status()
+    response = fetch_scrapling_response(url)
 
-    content_type = response.headers.get("content-type", "").lower()
+    content_type = next(
+        (value for key, value in response.headers.items()
+         if key.lower() == "content-type"), ""
+    ).lower()
     if "text/html" not in content_type:
         raise UnsupportedContentTypeError(f"Expected HTML, received: {content_type}")
 
-    return parse_page(response.text, str(response.url))
+    return parse_page(response.body.decode(response.encoding or "utf-8", errors="replace"),
+                      str(response.url))
+
+
+def fetch_scrapling_response(url):
+    """Use Scrapling HTTP with the agent's existing retry error contract."""
+    from scrapling.fetchers import Fetcher
+
+    request = httpx.Request("GET", url)
+    try:
+        response = Fetcher.get(url, follow_redirects="safe", timeout=10,
+                               retries=1, stealthy_headers=False,
+                               impersonate=None, verify=True)
+    except Exception as exc:
+        raise httpx.RequestError(str(exc), request=request) from exc
+    if not 200 <= response.status < 300:
+        raise httpx.HTTPStatusError(
+            f"HTTP {response.status} for {url}", request=request,
+            response=httpx.Response(response.status, request=request),
+        )
+    return response
 
 
 def parse_page(html: str, url: str) -> dict:
