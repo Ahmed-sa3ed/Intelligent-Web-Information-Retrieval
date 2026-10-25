@@ -344,6 +344,11 @@ class EarlyReviewModel:
                     "confidence": 0.99, "reason": "This is the current price.",
                 }})
             return "{}"
+        if "candidates" in request and "target_field" in request:
+            index = next(i for i, item in enumerate(request["candidates"])
+                         if item["value"] == "12 EUR")
+            return json.dumps({"candidate_index": index,
+                               "reason": "The source calls this the current price; the other is dated 2024."})
         if "target_field" in request:
             pages = json.loads(messages[1]["content"])["pages"]
             for current in pages:
@@ -377,7 +382,7 @@ with redirect_stdout(io.StringIO()) as output:
                              fetch_page_fn=historical_fetch)
 assert result["status"] == "answered" and result["answer"] == "12 EUR", result
 assert fetched == [archive_url, current_url], fetched
-assert "Early review did not verify" in output.getvalue()
+assert result["conflicts"][0]["status"] == "resolved"
 print("PASS: high-scoring historical price is rejected and navigation continues")
 
 fetched.clear()

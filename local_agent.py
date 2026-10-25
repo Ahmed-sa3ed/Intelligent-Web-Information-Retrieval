@@ -62,6 +62,10 @@ def main():
             print(f"    Source: {citation['source_url']}")
             print(f"    Passage: {citation['quote']}")
             print(f"    Support: {citation['support_mode']}")
+        for conflict in result.get("conflicts", []):
+            print(f"Conflict for {conflict['field']}: {conflict['status']} — {conflict['reason']}")
+            for candidate in conflict["candidates"]:
+                print(f"    {candidate['value']} | {candidate['source_url']}")
         return
 
     server = _serve_fixtures()

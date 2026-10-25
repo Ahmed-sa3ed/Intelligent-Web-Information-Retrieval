@@ -128,9 +128,9 @@ def fetch_with_retry(url, fetch_page_fn, max_attempts=2):
             sleep(0.25 * attempt)
 
 
-def answered_result(required_fields, selected):
+def answered_result(required_fields, selected, conflicts=None):
     """Expose only final verified evidence, in the requested answer order."""
-    return {
+    result = {
         "status": "answered",
         "answer": " | ".join(selected[field]["value"] for field in required_fields),
         "citations": [
@@ -141,6 +141,9 @@ def answered_result(required_fields, selected):
             for field in required_fields
         ],
     }
+    if conflicts:
+        result["conflicts"] = conflicts
+    return result
 
 
 def inspect_page(question, required_fields, page, model, tokenizer,
@@ -294,18 +297,22 @@ def run_agent(question, start_url, model, tokenizer, *,
             if review.get("grounded") and review.get("model_estimate_supplied")
             and review["confidence"] >= early_answer_confidence
         }
-        if all(field in strong_fields for field in required_fields):
+        if (all(field in strong_fields for field in required_fields)
+                and (successful_pages >= max_pages
+                     or not unvisited_links(pages, visited, start_url))):
             print(f"Early review | all {len(required_fields)} fields have grounded "
                   f"candidates at or above {early_answer_confidence:.2f}")
-            early_selected = select_facts({
+            early_request = {
                 "question": question, "required_fields": required_fields,
                 "pages": pages, "candidate_reviews": candidate_reviews,
                 "diagnostics": [],
-            }, model, tokenizer)
+            }
+            early_selected = select_facts(early_request, model, tokenizer)
             if early_selected is not None:
                 print("Early review approved | stopping after", successful_pages,
                       "page(s)")
-                return answered_result(required_fields, early_selected)
+                return answered_result(required_fields, early_selected,
+                                       early_request.get("conflicts"))
             print("Early review did not verify every field | continuing navigation")
 
         current_url = choose_next_url(
@@ -323,13 +330,16 @@ def run_agent(question, start_url, model, tokenizer, *,
                 "failure_reason": reason, "fetch_failures": fetch_failures}
 
     diagnostics = []
-    selected = select_facts({
+    final_request = {
         "question": question, "required_fields": required_fields,
         "pages": pages, "candidate_reviews": candidate_reviews,
         "diagnostics": diagnostics,
-    }, model, tokenizer)
+    }
+    selected = select_facts(final_request, model, tokenizer)
     if selected is None:
         result = {"status": "abstained", "answer": ""}
+        if final_request.get("conflicts"):
+            result["conflicts"] = final_request["conflicts"]
         rejected_grounded = [issue for issue in diagnostics
                              if issue["grounded_candidate_count"]]
         if rejected_grounded:
@@ -345,4 +355,5 @@ def run_agent(question, start_url, model, tokenizer, *,
             print("Abstaining: final evidence review did not verify every field. "
                   "See the field-level validation logs above.")
         return result
-    return answered_result(required_fields, selected)
+    return answered_result(required_fields, selected,
+                           final_request.get("conflicts"))

@@ -54,6 +54,22 @@ and supporting passages. Suite JSON reports retain citations under each run's
 Abstained results contain no citations, including when some candidates were
 found but the final review could not verify every requested field.
 
+## Conflicting evidence
+
+When visited pages yield different grounded values for one field, the agent
+reviews their quoted passages against the question. It selects a value only
+when the evidence distinguishes the applicable time, entity, scope, or version;
+otherwise it abstains. The selected value must still pass the final passage
+check and agree with the conflict choice. The `conflicts` result field records
+candidate values, source URLs, quotes, status, and reason. The ask CLI displays
+this explanation; suite JSON retains it under `actual.conflicts`.
+
+High-confidence early answers wait while discovered same-site links remain
+within the page budget, allowing a linked page to surface a competing value.
+The comparison covers extracted candidates on visited pages only; it cannot
+establish a site's truthfulness or discover evidence beyond the page budget.
+Run `python conflict_selfcheck.py` for offline conflict cases.
+
 ## Adaptive browser rendering
 
 Scrapling HTTP retrieval runs first. When a page contains a script,

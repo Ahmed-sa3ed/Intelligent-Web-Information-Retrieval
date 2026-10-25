@@ -16,8 +16,8 @@ decision traces, accuracy first, then speed.
   value, source URL, passage and exact/semantic support mode. The ask CLI prints
   numbered citations; suite reports preserve them under `actual.citations`.
   Abstentions do not expose citations.
-- Candidate confidence >= 0.95 for all fields prompts an early final review;
-  approval can stop browsing, while rejection continues navigation.
+- Candidate confidence >= 0.95 for all fields prompts an early final review
+  after discovered same-site links within the page budget have been checked.
 - Configurable maximum successful pages: agent_suite.json `max_pages`
   (default 4), or `run_agent_suite.py --max-pages N` (1..20).
 - Bounded parallel suite cases: `--workers 2`; final review of distinct
@@ -37,8 +37,8 @@ GitHub remote has been connected.
 Browser rendering now retries sparse script pages after static extraction fails.
 Next, evaluate dynamic sites against static-only runs, then consider observed
 API responses and improved detection for dense JavaScript shells.
-Other ideas: read PDFs; resolve contradictory evidence and freshness; improve
-answer formatting; return sources and supporting passages alongside answers.
+Other ideas: read PDFs; improve freshness and source reliability; improve
+answer formatting.
 
 ## Boundaries
 The local test reports, .venv, credentials, old code snapshots and .qodo
@@ -84,3 +84,14 @@ and one ScrapingCourse JS product page. `requires_browser` ensures that
 static-only retrieval cannot count as a pass for these cases. The published
 expected values were checked from matching static quote pages and the product
 catalog. Live rendered-site and model runs remain unverified in this session.
+
+## Conflicting evidence checkpoint (2026-10-25)
+- Grounded values from visited pages are compared per field. When they differ,
+  a dedicated review chooses an applicable claim with an evidence-based reason
+  or abstains; final passage review must agree with that choice.
+- Results and CLI expose competing values, source passages, and the resolution
+  reason. High-confidence early acceptance checks discovered same-site links
+  within the page budget first.
+- `conflict_selfcheck.py` covers linked competing claims, ambiguous abstention,
+  invalid selections, final-review disagreement, and a nonconflict case.
+- This does not verify source truth or find evidence on unvisited pages.
