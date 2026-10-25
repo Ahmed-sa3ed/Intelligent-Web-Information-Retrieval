@@ -76,3 +76,11 @@ uses Scrapling selectors. Sparse JavaScript pages use Scrapling
 this agent calls Scrapling's Python API directly to retain existing evidence
 checks and deterministic control. The browser bundle and a live dynamic-site
 run are still needed for end-to-end browser verification.
+
+## JavaScript website suite cases
+
+Five cases were added to `agent_suite.json`: four Quotes to Scrape JS pages
+and one ScrapingCourse JS product page. `requires_browser` ensures that
+static-only retrieval cannot count as a pass for these cases. The published
+expected values were checked from matching static quote pages and the product
+catalog. Live rendered-site and model runs remain unverified in this session.

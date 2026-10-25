@@ -36,7 +36,7 @@ class FakeModel:
 
 
 config, report_dir = read_suite(PROJECT / "agent_suite.json")
-assert len(config["cases"]) == 18
+assert len(config["cases"]) == 23
 assert report_dir == (PROJECT / "test_reports").resolve()
 assert matches_expected({"status": "answered", "answers": ["12 EUR"]},
                         {"status": "answered", "answer": " 12   eur. "})
@@ -75,6 +75,16 @@ assert row["decisions"][0]["candidate_reviews"][0]["confidence"] == 0.93
 summary = summarize([row], ["original"])
 assert summary["backends"]["original"]["passed"] == 1
 print("PASS: config, answer matching, local fetch, candidate review, report fields")
+
+
+# An answered browser case only passes if the browser path was actually tried.
+with local_fixture_server(True) as browser_base, \
+     patch("retrieval.fetch_scrapling_response", side_effect=local_fetch):
+    static_baseline = run_case({**case, "requires_browser": True}, "original",
+                               FakeModel(), browser_base, 1, static_only=True)
+assert static_baseline["actual"]["status"] == "answered"
+assert static_baseline["browser_attempts"] == 0 and not static_baseline["passed"]
+print("PASS: browser-designated cases cannot pass via static-only retrieval")
 
 
 from pathlib import Path

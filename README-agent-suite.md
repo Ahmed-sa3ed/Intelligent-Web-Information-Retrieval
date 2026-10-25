@@ -7,7 +7,7 @@ Run once after each agent change from PowerShell in match4-agent-local:
 
     .\.venv\Scripts\python.exe run_agent_suite.py
 
-This runs three local Cedar Museum checks and fifteen real publisher website checks,
+This runs three local Cedar Museum checks and twenty public website checks,
 using the Scrapling retriever and the model slug in the JSON. The current model
 slug (gpt-5.6-luna) came from your previous benchmark report. Run
 .\.venv\Scripts\python.exe local_agent.py models and change the JSON value if
@@ -24,7 +24,7 @@ Show the planned cases without any network calls:
 Useful options:
 
 - --only local: run three local cases.
-- --only real: run fifteen real website cases.
+- --only real: run twenty public website cases.
 - --case w3c_invention: run one named case.
 - --case archives_declaration_dates: test the two-date question alone.
 - --backends original scrapling: compare HTML parsers on the same Scrapling HTTP fetcher.
@@ -60,6 +60,19 @@ visited URLs and extracted website text; they do not store account tokens.
 The first five real-site expected answers come from the project's October 24 benchmark.
 Ten additional official-site answers were checked on October 25. Each new case
 labels its edge case in agent_suite.json.
+Five of the real cases exercise JavaScript rendering: four distinct pages of
+Quotes to Scrape's JavaScript sandbox (`js_quotes_choices`,
+`js_quotes_friends`, `js_quotes_happiness`, `js_quotes_library`) and the
+ScrapingCourse product rendering challenge (`js_product_ajax_sweatshirt`).
+These are five page checks across two practice websites. The quote answers
+were checked against the site's matching static pagination pages; the product
+price was checked against the same site's product catalog. They are marked
+`requires_browser`: an otherwise correct answer fails that case if no browser
+attempt occurred. Use the five `--case` options to run only these cases,
+and compare with `--static-only` to confirm that browser rendering matters.
+Install the browser bundle first with `.\.venv\Scripts\scrapling.exe install`.
+The five live rendered-site cases have not yet run in this workspace.
+
 A website can change or block retrieval: inspect error and trace before
 deciding that a failing case is an agent regression. The comparison ignores
 capitalization, whitespace, and a terminal sentence period while preserving

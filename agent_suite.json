@@ -265,6 +265,81 @@
           "April 7, 1948"
         ]
       }
+    },
+    {
+      "id": "js_quotes_choices",
+      "group": "real",
+      "url": "https://quotes.toscrape.com/js/",
+      "question": "On this page, who wrote the quote beginning 'It is our choices, Harry'?",
+      "edge_case": "JavaScript adds quotes after the page loads; static HTML has navigation only.",
+      "requires_browser": true,
+      "expected_checked_on": "2026-10-25",
+      "expected": {
+        "status": "answered",
+        "answers": [
+          "J.K. Rowling"
+        ]
+      }
+    },
+    {
+      "id": "js_quotes_friends",
+      "group": "real",
+      "url": "https://quotes.toscrape.com/js/page/2/",
+      "question": "On this page, who wrote 'Good friends, good books, and a sleepy conscience'?",
+      "edge_case": "JavaScript quote on the second pagination page.",
+      "requires_browser": true,
+      "expected_checked_on": "2026-10-25",
+      "expected": {
+        "status": "answered",
+        "answers": [
+          "Mark Twain"
+        ]
+      }
+    },
+    {
+      "id": "js_quotes_happiness",
+      "group": "real",
+      "url": "https://quotes.toscrape.com/js/page/3/",
+      "question": "On this page, who wrote 'For every minute you are angry you lose sixty seconds of happiness'?",
+      "edge_case": "JavaScript quote on the third pagination page.",
+      "requires_browser": true,
+      "expected_checked_on": "2026-10-25",
+      "expected": {
+        "status": "answered",
+        "answers": [
+          "Ralph Waldo Emerson"
+        ]
+      }
+    },
+    {
+      "id": "js_quotes_library",
+      "group": "real",
+      "url": "https://quotes.toscrape.com/js/page/4/",
+      "question": "On this page, who wrote 'I have always imagined that Paradise will be a kind of library'?",
+      "edge_case": "JavaScript quote on the fourth pagination page.",
+      "requires_browser": true,
+      "expected_checked_on": "2026-10-25",
+      "expected": {
+        "status": "answered",
+        "answers": [
+          "Jorge Luis Borges"
+        ]
+      }
+    },
+    {
+      "id": "js_product_ajax_sweatshirt",
+      "group": "real",
+      "url": "https://www.scrapingcourse.com/javascript-rendering",
+      "question": "What price is shown for the Ajax Full-Zip Sweatshirt on the JavaScript rendering challenge page?",
+      "edge_case": "Product card is populated after the page's JavaScript runs.",
+      "requires_browser": true,
+      "expected_checked_on": "2026-10-25",
+      "expected": {
+        "status": "answered",
+        "answers": [
+          "$69"
+        ]
+      }
     }
   ]
 }

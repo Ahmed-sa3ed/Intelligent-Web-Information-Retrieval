@@ -134,6 +134,8 @@ def read_suite(path):
                     or urlsplit(url).scheme not in ("http", "https")
                     or not urlsplit(url).netloc):
                 raise ValueError(f"{case['id']}: supply an HTTP(S) url only.")
+        if type(case.get("requires_browser", False)) is not bool:
+            raise ValueError(f"{case['id']}: requires_browser must be a boolean.")
         expected = case.get("expected")
         if not isinstance(expected, dict) or expected.get("status") not in ("answered", "abstained"):
             raise ValueError(f"{case['id']}: expected.status is invalid.")
@@ -239,7 +241,10 @@ def run_case(case, backend, model, local_base, repeat, *,
         "id": case["id"], "group": case["group"], "repeat": repeat,
         "backend": backend, "start_url": url, "question": case["question"],
         "expected": case["expected"], "actual": result,
-        "passed": error is None and matches_expected(case["expected"], result),
+        "requires_browser": case.get("requires_browser", False),
+        "passed": (error is None and matches_expected(case["expected"], result)
+                   and (not case.get("requires_browser")
+                        or metrics["browser_attempts"] > 0)),
         "total_seconds": round(elapsed, 3),
         "retrieval_seconds": round(metrics["retrieval_seconds"], 3),
         "other_seconds": round(max(0.0, elapsed - metrics["retrieval_seconds"]), 3),
