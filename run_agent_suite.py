@@ -2,6 +2,7 @@
 import argparse
 import io
 import json
+import re
 import statistics
 import sys
 import unicodedata
@@ -19,6 +20,7 @@ from urllib.parse import urljoin, urlsplit
 from agent import run_agent
 from chatgpt_plan import available_models
 from decision import ChatGPTPlanModel
+from text_match import match_span
 
 PROJECT = Path(__file__).resolve().parent
 BACKENDS = ("original", "scrapling")
@@ -68,7 +70,8 @@ def route_worker_output():
 
 
 def normalized(value):
-    return " ".join(unicodedata.normalize("NFKC", value).casefold().split()).rstrip(".")
+    collapsed = " ".join(unicodedata.normalize("NFKC", value).casefold().split())
+    return re.sub(r"(?<=[$€£])\s+(?=\d)", "", collapsed).rstrip(".")
 
 
 def matches_expected(expected, result):
@@ -137,6 +140,8 @@ def read_suite(path):
         for feature in ("requires_browser", "requires_pdf", "requires_conflict"):
             if type(case.get(feature, False)) is not bool:
                 raise ValueError(f"{case['id']}: {feature} must be a boolean.")
+        if case.get("feature_focus") not in (None, "pdf", "conflict"):
+            raise ValueError(f"{case['id']}: feature_focus must be pdf or conflict.")
         expected = case.get("expected")
         if not isinstance(expected, dict) or expected.get("status") not in ("answered", "abstained"):
             raise ValueError(f"{case['id']}: expected.status is invalid.")
@@ -203,6 +208,8 @@ def run_case(case, backend, model, local_base, repeat, *,
     fetch = fetcher_for(backend)
     metrics = {"fetch_attempts": 0, "pages": 0, "browser_attempts": 0,
                "browser_seconds": 0.0, "retrieval_seconds": 0.0}
+    static_texts = {}
+    rendered_texts = {}
 
     def timed_fetch(target):
         metrics["fetch_attempts"] += 1
@@ -210,6 +217,7 @@ def run_case(case, backend, model, local_base, repeat, *,
         try:
             page = fetch(target)
             metrics["pages"] += 1
+            static_texts[page["url"]] = page["text"]
             return page
         finally:
             metrics["retrieval_seconds"] += perf_counter() - started
@@ -219,7 +227,9 @@ def run_case(case, backend, model, local_base, repeat, *,
         metrics["browser_attempts"] += 1
         started = perf_counter()
         try:
-            return render_page(target, static_length)
+            page = render_page(target, static_length)
+            rendered_texts[page["url"]] = page["text"]
+            return page
         finally:
             elapsed = perf_counter() - started
             metrics["browser_seconds"] += elapsed
@@ -253,6 +263,13 @@ def run_case(case, backend, model, local_base, repeat, *,
         error = f"{type(exc).__name__}: {exc}"
     elapsed = perf_counter() - started
     pdf_exercised, conflict_exercised = feature_evidence(result)
+    browser_exercised = any(
+        source == url and source in rendered_texts
+        and match_span(rendered_texts[source], citation["quote"]) is not None
+        and match_span(static_texts.get(source, ""), citation["quote"]) is None
+        for citation in result.get("citations", [])
+        for source in (citation["source_url"],)
+    )
     return {
         "id": case["id"], "group": case["group"], "repeat": repeat,
         "backend": backend, "start_url": url, "question": case["question"],
@@ -262,9 +279,9 @@ def run_case(case, backend, model, local_base, repeat, *,
         "requires_conflict": case.get("requires_conflict", False),
         "pdf_exercised": pdf_exercised,
         "conflict_exercised": conflict_exercised,
+        "browser_exercised": browser_exercised,
         "passed": (error is None and matches_expected(case["expected"], result)
-                   and (not case.get("requires_browser")
-                        or metrics["browser_attempts"] > 0)
+                   and (not case.get("requires_browser") or browser_exercised)
                    and (not case.get("requires_pdf") or pdf_exercised)
                    and (not case.get("requires_conflict") or conflict_exercised)),
         "total_seconds": round(elapsed, 3),
@@ -342,7 +359,8 @@ def main(argv=None):
              if args.only == "all" or case["group"] == args.only]
     if args.feature:
         cases = [case for case in cases
-                 if any(case.get(f"requires_{feature}") for feature in args.feature)]
+                 if any(case.get("feature_focus") == feature or
+                        case.get(f"requires_{feature}") for feature in args.feature)]
     if args.case:
         unknown = set(args.case) - {case["id"] for case in config["cases"]}
         if unknown:

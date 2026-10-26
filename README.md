@@ -110,8 +110,9 @@ Install the optional browser dependency and binary to activate the fallback:
 
 `local_agent.py ask --static-only` and `run_agent_suite.py --static-only`
 provide a baseline without rendering. The suite report records
-`browser_attempts` and `browser_seconds` per run; `retrieval_seconds` includes
-browser time. Compare the same questions with one suite worker to reduce timing
+`browser_attempts`, `browser_seconds`, and `browser_exercised` per run;
+`requires_browser` needs a citation supported by rendered content absent from
+the static page. `retrieval_seconds` includes browser time. Compare the same questions with one suite worker to reduce timing
 noise. Run `python adaptive_selfcheck.py` for the offline fallback checks.
 
 The `original` suite backend is a historical name for Scrapling HTTP fetching

@@ -337,7 +337,8 @@
       "expected": {
         "status": "answered",
         "answers": [
-          "$69"
+          "$69",
+          "$69.00"
         ]
       }
     },
@@ -355,7 +356,8 @@
           "24%",
           "24 percent"
         ]
-      }
+      },
+      "feature_focus": "pdf"
     },
     {
       "id": "pdf_who_constitution_objective",
@@ -371,7 +373,8 @@
           "the attainment by all peoples of the highest possible level of health",
           "attainment by all peoples of the highest possible level of health"
         ]
-      }
+      },
+      "feature_focus": "pdf"
     },
     {
       "id": "pdf_esa_rosetta_lutetia",
@@ -387,7 +390,8 @@
           "10 July 2010",
           "July 10, 2010"
         ]
-      }
+      },
+      "feature_focus": "pdf"
     },
     {
       "id": "pdf_nist_si_mole",
@@ -403,7 +407,8 @@
           "mole",
           "mole (mol)"
         ]
-      }
+      },
+      "feature_focus": "pdf"
     },
     {
       "id": "pdf_un_udhr_articles",
@@ -419,7 +424,8 @@
           "30",
           "30 articles"
         ]
-      }
+      },
+      "feature_focus": "pdf"
     },
     {
       "id": "conflict_ietf_http_semantics",
@@ -427,8 +433,7 @@
       "url": "https://datatracker.ietf.org/doc/rfc7231/",
       "comparison_url": "https://datatracker.ietf.org/doc/rfc9110/",
       "question": "Which RFC defined HTTP/1.1 Semantics and Content in June 2014, rather than the later RFC that obsoleted it?",
-      "edge_case": "RFC 7231 and linked RFC 9110 have competing identifiers with different status and dates.",
-      "requires_conflict": true,
+      "edge_case": "Version-aware navigation: all visited pages can correctly identify RFC 7231, so a conflict is not required.",
       "expected_checked_on": "2026-10-26",
       "expected": {
         "status": "answered",
@@ -436,7 +441,8 @@
           "RFC 7231",
           "7231"
         ]
-      }
+      },
+      "feature_focus": "conflict"
     },
     {
       "id": "conflict_unicode_15_characters",
@@ -444,8 +450,7 @@
       "url": "https://www.unicode.org/versions/Unicode16.0.0/",
       "comparison_url": "https://www.unicode.org/versions/Unicode15.0.0/",
       "question": "How many total characters did Unicode 15.0 add up to, rather than the total reported for Unicode 16.0?",
-      "edge_case": "Version 16.0 totals 154,998; its archive link leads to version 15.0 with 149,186.",
-      "requires_conflict": true,
+      "edge_case": "Version-aware navigation: the model may correctly omit a Unicode 15 candidate from the Unicode 16 page.",
       "expected_checked_on": "2026-10-26",
       "expected": {
         "status": "answered",
@@ -454,7 +459,8 @@
           "149186",
           "149,186 characters"
         ]
-      }
+      },
+      "feature_focus": "conflict"
     },
     {
       "id": "conflict_python_3120_release_date",
@@ -472,15 +478,16 @@
           "October 2, 2023",
           "2 October 2023"
         ]
-      }
+      },
+      "feature_focus": "conflict"
     },
     {
       "id": "conflict_w3c_wcag21_date",
       "group": "real",
       "url": "https://www.w3.org/TR/WCAG21/",
       "comparison_url": "https://www.w3.org/TR/WCAG20/",
-      "question": "What is the W3C Recommendation date for the published WCAG 2.1 page, rather than the previous WCAG 2.0 recommendation?",
-      "edge_case": "WCAG 2.1 links to the previous 2.0 recommendation and has a different date.",
+      "question": "What date appears in the W3C Recommendation header of the latest published WCAG 2.1 page at this URL, rather than the original 2018 WCAG 2.1 publication or WCAG 2.0?",
+      "edge_case": "The latest WCAG 2.1 Recommendation header says 2025; the original WCAG 2.1 Recommendation says 2018.",
       "requires_conflict": true,
       "expected_checked_on": "2026-10-26",
       "expected": {
@@ -490,7 +497,8 @@
           "6 May 2025",
           "May 6, 2025"
         ]
-      }
+      },
+      "feature_focus": "conflict"
     },
     {
       "id": "conflict_mdn_307_method",
@@ -507,7 +515,8 @@
           "307",
           "307 Temporary Redirect"
         ]
-      }
+      },
+      "feature_focus": "conflict"
     }
   ]
 }

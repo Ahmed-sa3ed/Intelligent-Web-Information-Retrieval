@@ -42,6 +42,10 @@ assert matches_expected({"status": "answered", "answers": ["12 EUR"]},
                         {"status": "answered", "answer": " 12   eur. "})
 assert not matches_expected({"status": "answered", "answers": ["12 EUR"]},
                             {"status": "answered", "answer": "12 USD"})
+assert matches_expected({"status": "answered", "answers": ["$69.00"]},
+                        {"status": "answered", "answer": "$\n69.00"})
+assert not matches_expected({"status": "answered", "answers": ["$69"]},
+                            {"status": "answered", "answer": "$69.00"})
 assert matches_expected({"status": "abstained", "answers": []},
                         {"status": "abstained", "answer": ""})
 assert not matches_expected({"status": "abstained", "answers": []},

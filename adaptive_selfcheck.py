@@ -94,8 +94,8 @@ with patch("retrieval.fetch_scrapling_response", return_value=SimpleNamespace(
         status=200, headers={"content-type": "text/html"}, encoding="utf-8",
         url=url, body=response.content)), \
      patch("retrieval_browser.render_page", return_value=rendered):
-    row = run_case(case, "original", Model(), None, 1)
-assert row["passed"] and row["browser_attempts"] == 1
+    row = run_case({**case, "requires_browser": True}, "original", Model(), None, 1)
+assert row["passed"] and row["browser_attempts"] == 1 and row["browser_exercised"]
 assert row["actual"]["citations"][0]["quote"] == "Adult admission: 12 EUR."
 with patch("retrieval.fetch_scrapling_response", return_value=SimpleNamespace(
         status=200, headers={"content-type": "text/html"}, encoding="utf-8",
@@ -103,6 +103,15 @@ with patch("retrieval.fetch_scrapling_response", return_value=SimpleNamespace(
     baseline = run_case(case, "original", Model(), None, 1, static_only=True)
 assert not baseline["passed"] and baseline["browser_attempts"] == 0
 print("PASS: suite reports browser attempts and static-only baseline")
+
+with patch("run_agent_suite.fetcher_for", return_value=fetch), \
+     patch("retrieval_browser.render_page", side_effect=BrowserRenderError("offline")):
+    failed_render = run_case({**case, "requires_browser": True}, "original",
+                             Model(), None, 1, max_pages=2)
+assert failed_render["actual"]["answer"] == "12 EUR"
+assert failed_render["browser_attempts"] == 1
+assert not failed_render["browser_exercised"] and not failed_render["passed"]
+print("PASS: a static fallback answer cannot pass a failed browser case")
 
 
 # The renderer reads the final browser DOM and URL, then reuses HTML parsing.

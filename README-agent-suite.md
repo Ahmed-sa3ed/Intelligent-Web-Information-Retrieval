@@ -68,11 +68,13 @@ ScrapingCourse product rendering challenge (`js_product_ajax_sweatshirt`).
 These are five page checks across two practice websites. The quote answers
 were checked against the site's matching static pagination pages; the product
 price was checked against the same site's product catalog. They are marked
-`requires_browser`: an otherwise correct answer fails that case if no browser
-attempt occurred. Use the five `--case` options to run only these cases,
+`requires_browser`: an otherwise correct answer passes only when a citation
+comes from the intended rendered page and its passage was absent from static HTML. Use the five `--case` options to run only these cases,
 and compare with `--static-only` to confirm that browser rendering matters.
 Install the browser bundle first with `.\.venv\Scripts\scrapling.exe install`.
-The five live rendered-site cases have not yet run in this workspace.
+The October 26 live run could not launch Chromium. Browser attempts alone
+therefore do not satisfy the feature check; install the matching browser bundle
+in the environment that runs the suite and repeat these cases.
 
 Ten additional sites cover the PDF and conflicting-evidence features.
 Five start from public PDFs: IRS Form W-9 (backup withholding rate), WHO
@@ -84,13 +86,14 @@ W3C WCAG 2.1 and 2.0, and MDN HTTP 302 and 307. The exact URLs, questions,
 accepted answers, and comparison links are in `agent_suite.json`.
 
 `requires_pdf` means a correct answer passes only when a verified citation has
-a PDF page number. `requires_conflict` means the run must record distinct
-competing values and resolve them (or leave them unresolved for an expected
-abstention). The report includes `pdf_exercised` and `conflict_exercised` to
-show why a case failed even if its answer text matches. These live cases have
-source-checked expected answers but have not been run with the account-backed
-model in this workspace. The agent may miss a linked contrast within the
-four-page navigation budget; that is a measured failure, not a passed case.
+a PDF page number. Three of the linked cases use `requires_conflict`: the run
+must record distinct competing values and resolve them (or leave them
+unresolved for an expected abstention). The IETF and Unicode cases check
+version-aware navigation; their correctly selected answers do not require the
+model to extract an irrelevant competing value. `feature_focus` keeps all ten
+cases selectable with `--feature pdf --feature conflict`. Reports expose
+`pdf_exercised`, `conflict_exercised`, and `browser_exercised` separately from
+answer correctness. Public-site runs can change or hit the page budget.
 Run one case with `--case pdf_irs_w9_backup_rate` or
 `--case conflict_mdn_307_method`, then run all ten with
 `python run_agent_suite.py --feature pdf --feature conflict`.
