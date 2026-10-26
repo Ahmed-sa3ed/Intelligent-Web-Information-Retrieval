@@ -36,7 +36,7 @@ class FakeModel:
 
 
 config, report_dir = read_suite(PROJECT / "agent_suite.json")
-assert len(config["cases"]) == 23
+assert len(config["cases"]) == 33
 assert report_dir == (PROJECT / "test_reports").resolve()
 assert matches_expected({"status": "answered", "answers": ["12 EUR"]},
                         {"status": "answered", "answer": " 12   eur. "})
@@ -85,6 +85,17 @@ with local_fixture_server(True) as browser_base, \
 assert static_baseline["actual"]["status"] == "answered"
 assert static_baseline["browser_attempts"] == 0 and not static_baseline["passed"]
 print("PASS: browser-designated cases cannot pass via static-only retrieval")
+
+# An HTML answer cannot satisfy the PDF or conflict feature gates by luck.
+with local_fixture_server(True) as feature_base, \
+     patch("retrieval.fetch_scrapling_response", side_effect=local_fetch):
+    feature_row = run_case({**case, "requires_pdf": True,
+                            "requires_conflict": True}, "original",
+                           FakeModel(), feature_base, 1)
+assert feature_row["actual"]["status"] == "answered"
+assert not feature_row["pdf_exercised"] and not feature_row["conflict_exercised"]
+assert not feature_row["passed"]
+print("PASS: PDF and conflict cases require feature evidence beyond the answer")
 
 
 from pathlib import Path

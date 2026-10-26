@@ -7,7 +7,7 @@ Run once after each agent change from PowerShell in match4-agent-local:
 
     .\.venv\Scripts\python.exe run_agent_suite.py
 
-This runs three local Cedar Museum checks and twenty public website checks,
+This runs three local Cedar Museum checks and thirty public website checks,
 using the Scrapling retriever and the model slug in the JSON. The current model
 slug (gpt-5.6-luna) came from your previous benchmark report. Run
 .\.venv\Scripts\python.exe local_agent.py models and change the JSON value if
@@ -24,7 +24,7 @@ Show the planned cases without any network calls:
 Useful options:
 
 - --only local: run three local cases.
-- --only real: run twenty public website cases.
+- --only real: run thirty public website cases.
 - --case w3c_invention: run one named case.
 - --case archives_declaration_dates: test the two-date question alone.
 - --backends original scrapling: compare HTML parsers on the same Scrapling HTTP fetcher.
@@ -73,6 +73,26 @@ and compare with `--static-only` to confirm that browser rendering matters.
 Install the browser bundle first with `.\.venv\Scripts\scrapling.exe install`.
 The five live rendered-site cases have not yet run in this workspace.
 
+Ten additional sites cover the PDF and conflicting-evidence features.
+Five start from public PDFs: IRS Form W-9 (backup withholding rate), WHO
+Constitution (Article 1 objective), ESA Rosetta bulletin (Lutetia flyby date),
+NIST SI brochure (amount-of-substance unit), and a UN edition of the Universal
+Declaration (article count). Five compare linked HTML pages: IETF RFC 7231 and
+9110, Unicode 15.0 and 16.0, Python 3.12.0 and a later maintenance release,
+W3C WCAG 2.1 and 2.0, and MDN HTTP 302 and 307. The exact URLs, questions,
+accepted answers, and comparison links are in `agent_suite.json`.
+
+`requires_pdf` means a correct answer passes only when a verified citation has
+a PDF page number. `requires_conflict` means the run must record distinct
+competing values and resolve them (or leave them unresolved for an expected
+abstention). The report includes `pdf_exercised` and `conflict_exercised` to
+show why a case failed even if its answer text matches. These live cases have
+source-checked expected answers but have not been run with the account-backed
+model in this workspace. The agent may miss a linked contrast within the
+four-page navigation budget; that is a measured failure, not a passed case.
+Run one case with `--case pdf_irs_w9_backup_rate` or
+`--case conflict_mdn_307_method` before the full suite.
+
 A website can change or block retrieval: inspect error and trace before
 deciding that a failing case is an agent regression. The comparison ignores
 capitalization, whitespace, and a terminal sentence period while preserving
@@ -91,7 +111,7 @@ validation. Final review sends only relevant excerpts of long pages to the
 model, and the full source is checked again after selection.
 
 Temporary network errors and HTTP 408, 429 and 5xx statuses receive one extra
-attempt. Other HTTP failures and non-HTML pages are logged and skipped; the
+attempt. Other HTTP failures and unsupported document types are logged and skipped; the
 agent can try another link or use evidence already collected. If it must
 abstain after a fetch problem, its result includes `failure_reason` and
 `fetch_failures`. The trace now records candidate confidence and source checks,

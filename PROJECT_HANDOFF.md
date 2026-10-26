@@ -105,3 +105,13 @@ catalog. Live rendered-site and model runs remain unverified in this session.
   image-only PDFs fail with a logged reason. OCR is future work.
 - `pdf_selfcheck.py` exercises linked and direct PDFs, page citation, backend
   parity, signature detection, and unsupported files without network calls.
+
+## PDF and conflict public-site suite (2026-10-26)
+- Ten distinct additional sites in `agent_suite.json`: five direct PDFs and
+  five linked, versioned or semantically competing HTML sources. The accepted
+  answers were checked against the publishers' documents.
+- `requires_pdf` and `requires_conflict` in `run_agent_suite.py` demand a PDF
+  page citation or a real conflict report in addition to answer accuracy.
+- `suite_selfcheck.py` verifies that an ordinary HTML answer cannot pass those
+  gates. `run_agent_suite.py --dry-run` enumerates 33 cases. Live model and
+  public-site runs are pending; report access failures and navigation misses.

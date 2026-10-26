@@ -134,8 +134,9 @@ def read_suite(path):
                     or urlsplit(url).scheme not in ("http", "https")
                     or not urlsplit(url).netloc):
                 raise ValueError(f"{case['id']}: supply an HTTP(S) url only.")
-        if type(case.get("requires_browser", False)) is not bool:
-            raise ValueError(f"{case['id']}: requires_browser must be a boolean.")
+        for feature in ("requires_browser", "requires_pdf", "requires_conflict"):
+            if type(case.get(feature, False)) is not bool:
+                raise ValueError(f"{case['id']}: {feature} must be a boolean.")
         expected = case.get("expected")
         if not isinstance(expected, dict) or expected.get("status") not in ("answered", "abstained"):
             raise ValueError(f"{case['id']}: expected.status is invalid.")
@@ -147,6 +148,20 @@ def read_suite(path):
         if expected["status"] == "abstained" and answers:
             raise ValueError(f"{case['id']}: abstained requires an empty answers list.")
     return data, report_path
+
+
+def feature_evidence(result):
+    """A correct answer alone does not show that a feature was exercised."""
+    pdf = any(type(item.get("page_number")) is int and item["page_number"] > 0
+              for item in result.get("citations", []))
+    needed_status = "resolved" if result.get("status") == "answered" else "unresolved"
+    conflict = any(
+        item.get("status") == needed_status
+        and len({str(candidate.get("value", "")).casefold()
+                 for candidate in item.get("candidates", [])}) > 1
+        for item in result.get("conflicts", [])
+    )
+    return pdf, conflict
 
 
 class QuietHandler(SimpleHTTPRequestHandler):
@@ -237,14 +252,21 @@ def run_case(case, backend, model, local_base, repeat, *,
         result = {"status": "error", "answer": ""}
         error = f"{type(exc).__name__}: {exc}"
     elapsed = perf_counter() - started
+    pdf_exercised, conflict_exercised = feature_evidence(result)
     return {
         "id": case["id"], "group": case["group"], "repeat": repeat,
         "backend": backend, "start_url": url, "question": case["question"],
         "expected": case["expected"], "actual": result,
         "requires_browser": case.get("requires_browser", False),
+        "requires_pdf": case.get("requires_pdf", False),
+        "requires_conflict": case.get("requires_conflict", False),
+        "pdf_exercised": pdf_exercised,
+        "conflict_exercised": conflict_exercised,
         "passed": (error is None and matches_expected(case["expected"], result)
                    and (not case.get("requires_browser")
-                        or metrics["browser_attempts"] > 0)),
+                        or metrics["browser_attempts"] > 0)
+                   and (not case.get("requires_pdf") or pdf_exercised)
+                   and (not case.get("requires_conflict") or conflict_exercised)),
         "total_seconds": round(elapsed, 3),
         "retrieval_seconds": round(metrics["retrieval_seconds"], 3),
         "other_seconds": round(max(0.0, elapsed - metrics["retrieval_seconds"]), 3),

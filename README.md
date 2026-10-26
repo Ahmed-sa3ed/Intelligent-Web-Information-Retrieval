@@ -28,7 +28,8 @@ The sign-in stores credentials outside this repository. See
 .\.venv\Scripts\python.exe run_agent_suite.py --workers 2
 ```
 
-The suite configuration is in [agent_suite.json](agent_suite.json).
+The suite configuration is in [agent_suite.json](agent_suite.json), including
+PDF and competing-evidence cases with feature-specific pass checks.
 Use `--max-pages N` to change the browsing limit for one run. Results are
 written under `test_reports/`, which is excluded from Git.
 

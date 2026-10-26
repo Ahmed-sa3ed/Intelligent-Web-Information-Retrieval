@@ -340,6 +340,174 @@
           "$69"
         ]
       }
+    },
+    {
+      "id": "pdf_irs_w9_backup_rate",
+      "group": "real",
+      "url": "https://www.irs.gov/pub/irs-pdf/fw9.pdf",
+      "question": "According to the March 2024 Form W-9 PDF, what percentage is the backup withholding rate?",
+      "edge_case": "PDF text on the second page; distinguish the rate from other numbers.",
+      "requires_pdf": true,
+      "expected_checked_on": "2026-10-26",
+      "expected": {
+        "status": "answered",
+        "answers": [
+          "24%",
+          "24 percent"
+        ]
+      }
+    },
+    {
+      "id": "pdf_who_constitution_objective",
+      "group": "real",
+      "url": "https://www.who.int/docs/default-source/documents/publications/basic-documents-constitution-of-who.pdf",
+      "question": "In the WHO Constitution PDF, what is the objective of the Organization in Article 1?",
+      "edge_case": "PDF passage in Article 1, next to many other numbered articles.",
+      "requires_pdf": true,
+      "expected_checked_on": "2026-10-26",
+      "expected": {
+        "status": "answered",
+        "answers": [
+          "the attainment by all peoples of the highest possible level of health",
+          "attainment by all peoples of the highest possible level of health"
+        ]
+      }
+    },
+    {
+      "id": "pdf_esa_rosetta_lutetia",
+      "group": "real",
+      "url": "https://www.esa.int/esapub/bulletin/bulletin136/bul136_inbrief.pdf",
+      "question": "In this ESA bulletin PDF, for what date was Rosetta scheduled to fly by asteroid (21) Lutetia?",
+      "edge_case": "PDF fourth page has several different mission dates.",
+      "requires_pdf": true,
+      "expected_checked_on": "2026-10-26",
+      "expected": {
+        "status": "answered",
+        "answers": [
+          "10 July 2010",
+          "July 10, 2010"
+        ]
+      }
+    },
+    {
+      "id": "pdf_nist_si_mole",
+      "group": "real",
+      "url": "https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.330-2019.pdf",
+      "question": "According to the 2019 NIST SI brochure PDF, what is the SI unit of amount of substance?",
+      "edge_case": "Long PDF with several base units; relevant definition is within the first 40 pages.",
+      "requires_pdf": true,
+      "expected_checked_on": "2026-10-26",
+      "expected": {
+        "status": "answered",
+        "answers": [
+          "mole",
+          "mole (mol)"
+        ]
+      }
+    },
+    {
+      "id": "pdf_un_udhr_articles",
+      "group": "real",
+      "url": "https://india.un.org/en/download/148244/253557",
+      "question": "According to this United Nations PDF edition, how many articles does the Universal Declaration of Human Rights contain?",
+      "edge_case": "PDF URL has no .pdf suffix; passage occurs after the cover pages.",
+      "requires_pdf": true,
+      "expected_checked_on": "2026-10-26",
+      "expected": {
+        "status": "answered",
+        "answers": [
+          "30",
+          "30 articles"
+        ]
+      }
+    },
+    {
+      "id": "conflict_ietf_http_semantics",
+      "group": "real",
+      "url": "https://datatracker.ietf.org/doc/rfc7231/",
+      "comparison_url": "https://datatracker.ietf.org/doc/rfc9110/",
+      "question": "Which RFC defined HTTP/1.1 Semantics and Content in June 2014, rather than the later RFC that obsoleted it?",
+      "edge_case": "RFC 7231 and linked RFC 9110 have competing identifiers with different status and dates.",
+      "requires_conflict": true,
+      "expected_checked_on": "2026-10-26",
+      "expected": {
+        "status": "answered",
+        "answers": [
+          "RFC 7231",
+          "7231"
+        ]
+      }
+    },
+    {
+      "id": "conflict_unicode_15_characters",
+      "group": "real",
+      "url": "https://www.unicode.org/versions/Unicode16.0.0/",
+      "comparison_url": "https://www.unicode.org/versions/Unicode15.0.0/",
+      "question": "How many total characters did Unicode 15.0 add up to, rather than the total reported for Unicode 16.0?",
+      "edge_case": "Version 16.0 totals 154,998; its archive link leads to version 15.0 with 149,186.",
+      "requires_conflict": true,
+      "expected_checked_on": "2026-10-26",
+      "expected": {
+        "status": "answered",
+        "answers": [
+          "149,186",
+          "149186",
+          "149,186 characters"
+        ]
+      }
+    },
+    {
+      "id": "conflict_python_3120_release_date",
+      "group": "real",
+      "url": "https://www.python.org/downloads/release/python-3120/",
+      "comparison_url": "https://www.python.org/downloads/release/python-31216/",
+      "question": "On what date was Python 3.12.0 released, rather than the newer maintenance release linked from its page?",
+      "edge_case": "The superseded 3.12.0 page links to a later 3.12 release with another date.",
+      "requires_conflict": true,
+      "expected_checked_on": "2026-10-26",
+      "expected": {
+        "status": "answered",
+        "answers": [
+          "Oct. 2, 2023",
+          "October 2, 2023",
+          "2 October 2023"
+        ]
+      }
+    },
+    {
+      "id": "conflict_w3c_wcag21_date",
+      "group": "real",
+      "url": "https://www.w3.org/TR/WCAG21/",
+      "comparison_url": "https://www.w3.org/TR/WCAG20/",
+      "question": "What is the W3C Recommendation date for the published WCAG 2.1 page, rather than the previous WCAG 2.0 recommendation?",
+      "edge_case": "WCAG 2.1 links to the previous 2.0 recommendation and has a different date.",
+      "requires_conflict": true,
+      "expected_checked_on": "2026-10-26",
+      "expected": {
+        "status": "answered",
+        "answers": [
+          "06 May 2025",
+          "6 May 2025",
+          "May 6, 2025"
+        ]
+      }
+    },
+    {
+      "id": "conflict_mdn_307_method",
+      "group": "real",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/302",
+      "comparison_url": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/307",
+      "question": "Which temporary redirect status code guarantees that the request method and body are not changed, unlike 302?",
+      "edge_case": "302 page compares its behavior with linked 307 page.",
+      "requires_conflict": true,
+      "expected_checked_on": "2026-10-26",
+      "expected": {
+        "status": "answered",
+        "answers": [
+          "307",
+          "307 Temporary Redirect"
+        ]
+      }
     }
   ]
 }
