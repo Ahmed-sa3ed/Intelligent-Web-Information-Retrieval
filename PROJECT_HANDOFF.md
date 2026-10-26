@@ -9,7 +9,7 @@ decision traces, accuracy first, then speed.
 ## Current behavior
 - Windows local version with ChatGPT Plus sign-in; account credentials are
   outside the project. The AMD GPU notebook is an earlier checkpoint.
-- Scrapling HTTP fetching and Scrapling browser rendering; site-local links and GET forms.
+- Scrapling HTTP fetching and Scrapling browser rendering; site-local links, PDFs and GET forms.
 - Text chunks and structured table text; fact planning, extraction, quote
   grounding, semantic fallback, final per-field review, and abstention.
 - Answered results include ordered per-field `citations` with the verified
@@ -37,8 +37,8 @@ GitHub remote has been connected.
 Browser rendering now retries sparse script pages after static extraction fails.
 Next, evaluate dynamic sites against static-only runs, then consider observed
 API responses and improved detection for dense JavaScript shells.
-Other ideas: read PDFs; improve freshness and source reliability; improve
-answer formatting.
+Other ideas: add OCR for scanned PDFs; improve freshness and source reliability;
+improve answer formatting.
 
 ## Boundaries
 The local test reports, .venv, credentials, old code snapshots and .qodo
@@ -95,3 +95,13 @@ catalog. Live rendered-site and model runs remain unverified in this session.
 - `conflict_selfcheck.py` covers linked competing claims, ambiguous abstention,
   invalid selections, final-review disagreement, and a nonconflict case.
 - This does not verify source truth or find evidence on unvisited pages.
+
+## PDF reading checkpoint (2026-10-26)
+- Scrapling HTTP response bytes feed `pypdf` for direct PDF URLs and same-site
+  PDF links. Both suite backends share the parser; the final cited quote must
+  occur on one extracted page, and citations expose `page_number`.
+- Bounded extraction: 8 MiB PDF, 40 pages, 200,000 text characters, and a
+  2 MiB decompressed content stream per page. Encrypted, malformed, and
+  image-only PDFs fail with a logged reason. OCR is future work.
+- `pdf_selfcheck.py` exercises linked and direct PDFs, page citation, backend
+  parity, signature detection, and unsupported files without network calls.

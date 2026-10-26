@@ -60,6 +60,8 @@ def main():
         for number, citation in enumerate(result.get("citations", []), 1):
             print(f"[{number}] {citation['field']}: {citation['value']}")
             print(f"    Source: {citation['source_url']}")
+            if "page_number" in citation:
+                print(f"    PDF page: {citation['page_number']}")
             print(f"    Passage: {citation['quote']}")
             print(f"    Support: {citation['support_mode']}")
         for conflict in result.get("conflicts", []):

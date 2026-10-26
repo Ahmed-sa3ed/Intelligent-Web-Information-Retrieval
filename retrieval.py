@@ -8,11 +8,11 @@ from tables import format_simple_tables
 
 
 class UnsupportedContentTypeError(ValueError):
-    """A downloaded link points to content this HTML agent cannot read."""
+    """A downloaded link points to content this agent cannot read."""
 
 
 def fetch_page(url: str) -> dict:
-    """Fetch an HTML page and return its text, links, and search forms."""
+    """Fetch HTML or PDF with Scrapling and return an evidence page."""
     if urlsplit(url).scheme not in {"http", "https"}:
         raise ValueError("Only HTTP and HTTPS URLs are supported.")
 
@@ -22,8 +22,11 @@ def fetch_page(url: str) -> dict:
         (value for key, value in response.headers.items()
          if key.lower() == "content-type"), ""
     ).lower()
+    if "application/pdf" in content_type or response.body.startswith(b"%PDF-"):
+        from retrieval_pdf import parse_pdf
+        return parse_pdf(response.body, str(response.url))
     if "text/html" not in content_type:
-        raise UnsupportedContentTypeError(f"Expected HTML, received: {content_type}")
+        raise UnsupportedContentTypeError(f"Expected HTML or PDF, received: {content_type}")
 
     return parse_page(response.body.decode(response.encoding or "utf-8", errors="replace"),
                       str(response.url))

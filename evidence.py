@@ -7,6 +7,7 @@ from contextvars import copy_context
 
 from decision import generate_reply
 from extraction import extract_facts
+from retrieval_pdf import pdf_page_number
 from text_match import match_span
 from validation import validate_facts
 
@@ -428,6 +429,21 @@ def select_facts(request, model, tokenizer):
                     "model_reason": conflict["reason"],
                 })
                 choice = None
+        if choice is not None and "pdf_pages" in pages[choice["source_url"]]:
+            number = pdf_page_number(pages[choice["source_url"]], choice["quote"])
+            if number is None:
+                issues.append({
+                    "field": field,
+                    "reason": "PDF quotation must occur on one extracted page.",
+                    "grounded_candidate_count": len([r for r in reviews if r.get("grounded")]),
+                    "model_reason": "Final passage spans PDF page boundaries.",
+                })
+                choice = None
+                if conflict is not None:
+                    conflict["status"] = "unresolved"
+                    conflict["reason"] = "Final quotation does not occur on one PDF page."
+            else:
+                choice["page_number"] = number
         return field, choice, issues, conflict
 
     if len(fields) == 1:

@@ -3,7 +3,7 @@
 A local question-answering agent that navigates sites using Scrapling HTTP
 fetching and a Scrapling browser fallback for sparse JavaScript pages, extracts
 evidence, and checks answers against page passages. It can
-follow links, submit GET search forms, read tables and long pages, abstain when
+follow links, submit GET search forms, read tables, PDFs and long pages, abstain when
 support is missing, and log how it made each decision.
 
 ## Setup (Windows PowerShell)
@@ -23,6 +23,7 @@ The sign-in stores credentials outside this repository. See
 
 ```powershell
 .\.venv\Scripts\python.exe feature_selfcheck.py
+.\.venv\Scripts\python.exe pdf_selfcheck.py
 .\.venv\Scripts\python.exe suite_selfcheck.py
 .\.venv\Scripts\python.exe run_agent_suite.py --workers 2
 ```
@@ -69,6 +70,22 @@ within the page budget, allowing a linked page to surface a competing value.
 The comparison covers extracted candidates on visited pages only; it cannot
 establish a site's truthfulness or discover evidence beyond the page budget.
 Run `python conflict_selfcheck.py` for offline conflict cases.
+
+## PDF reading
+
+The same Scrapling HTTP fetch handles PDF links and direct PDF URLs. A PDF
+response is recognized by its content type or `%PDF-` signature, then `pypdf`
+extracts selectable text into the existing fact and final quotation checks.
+PDF citations include `page_number` (also shown by the ask CLI), alongside
+the document URL and verified passage. Both suite backends use the same PDF
+extractor. Install dependencies using `requirements-scrapling.txt` as above.
+
+The parser reads at most 8 MiB per PDF, 40 pages and 200,000 characters, and
+marks truncated documents in the page record. Password-protected, malformed,
+and image-only scanned PDFs cannot provide text; the agent logs the fetch
+failure and can continue to another link. This feature does not perform OCR
+or reliably reconstruct complex visual table layout. Run
+`python pdf_selfcheck.py` for the offline cases.
 
 ## Adaptive browser rendering
 

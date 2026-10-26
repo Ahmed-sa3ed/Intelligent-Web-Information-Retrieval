@@ -20,8 +20,11 @@ def fetch_page(url: str) -> dict:
         (value for key, value in response.headers.items()
          if key.lower() == "content-type"), ""
     ).lower()
+    if "application/pdf" in content_type or response.body.startswith(b"%PDF-"):
+        from retrieval_pdf import parse_pdf
+        return parse_pdf(response.body, str(response.url))
     if "text/html" not in content_type:
-        raise UnsupportedContentTypeError(f"Expected HTML, received: {content_type}")
+        raise UnsupportedContentTypeError(f"Expected HTML or PDF, received: {content_type}")
 
     final_url = str(response.url)
     html = response.body.decode(response.encoding or "utf-8", errors="replace")

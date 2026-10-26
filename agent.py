@@ -137,7 +137,9 @@ def answered_result(required_fields, selected, conflicts=None):
             {"field": field, "value": selected[field]["value"],
              "source_url": selected[field]["source_url"],
              "quote": selected[field]["quote"],
-             "support_mode": selected[field].get("support_mode", "exact")}
+             "support_mode": selected[field].get("support_mode", "exact"),
+             **({"page_number": selected[field]["page_number"]}
+                if "page_number" in selected[field] else {})}
             for field in required_fields
         ],
     }
@@ -323,7 +325,7 @@ def run_agent(question, start_url, model, tokenizer, *,
             break
 
     if not pages:
-        reason = ("No HTML page could be fetched. " + "; ".join(
+        reason = ("No supported page could be fetched. " + "; ".join(
             f"{item['url']} ({item['reason']})" for item in fetch_failures))
         print("Abstaining:", reason)
         return {"status": "abstained", "answer": "",
