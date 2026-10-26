@@ -147,6 +147,23 @@ def candidate_fields(request, page, model, tokenizer, reviews=None):
         if not isinstance(fact, dict):
             continue
         errors = validate_facts([field], {field: fact}, {page["url"]: page})
+        if (errors and "pdf_pages" in page
+                and match_span(page["text"], fact.get("value")) is not None):
+            print(f"Candidate {field} | PDF quote rejected; retrying exact passage once")
+            repair_request = {**request, "required_fields": [field],
+                              "validation_feedback": errors,
+                              "previous_candidate": {
+                                  "value": fact.get("value"),
+                                  "quote": fact.get("quote")}}
+            try:
+                repaired = extract_facts(repair_request, model, tokenizer).get(field)
+            except (ValueError, TypeError):
+                repaired = None
+            if repaired is not None:
+                repaired_errors = validate_facts(
+                    [field], {field: repaired}, {page["url"]: page})
+                if not repaired_errors:
+                    fact, errors = repaired, []
         if not errors:
             found.add(field)
         estimate = fact.get("confidence")
@@ -275,6 +292,15 @@ def _review_page_text(page, reviews):
             break
     if excerpts:
         return "\n[Evidence passage]\n".join(excerpts)
+    # An invalid quotation is not evidence, but its value can locate the exact
+    # source neighborhood for a fresh final review of a long document.
+    for review in reviews:
+        if review["source_url"] != page["url"]:
+            continue
+        actual = match_span(text, review.get("value"))
+        if actual is not None:
+            start = text.find(actual)
+            return text[max(0, start - 650): min(len(text), start + len(actual) + 650)]
     # Extraction has already inspected all chunks; this is context for final review.
     return text[:5000]
 

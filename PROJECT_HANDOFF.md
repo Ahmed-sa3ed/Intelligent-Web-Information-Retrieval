@@ -116,3 +116,9 @@ catalog. Live rendered-site and model runs remain unverified in this session.
   gates. `--feature pdf --feature conflict` selects exactly the ten new cases;
   `run_agent_suite.py --dry-run` enumerates 33 cases. Live model and
   public-site runs are pending; report access failures and navigation misses.
+
+## Latest report follow-up (2026-10-26)
+- The latest 33-case report passed 27 cases. Five JavaScript cases could not launch Chromium in that runtime. The old browser gate counted an attempted render, letting three static fallback answers pass incorrectly. It now requires a verified citation from rendered target content absent in static text; `browser_exercised` records this separately.
+- IETF and Unicode version-navigation cases did not produce competing grounded values, so their `requires_conflict` flags were removed. `feature_focus` retains their selection. The WCAG question asks for the latest published page-header date, distinguishing it from the original 2018 publication. Product prices accept equivalent `$69.00` formatting while retaining the browser gate.
+- The ESA PDF date appeared in extracted text, but its proposed quote did not match a continuous source span. A bounded PDF extraction retry can copy the exact passage; final review also sees the relevant neighborhood on a long page after a rejected quote. Both paths still require passage validation.
+- Offline adaptive, suite, PDF, conflict, and feature checks pass. The local Python runtime lacks Scrapling and its browser binary, so repeat the public suite in the configured environment after installing the browser bundle.

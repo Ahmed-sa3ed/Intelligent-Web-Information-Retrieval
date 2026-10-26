@@ -29,6 +29,9 @@ Output:
 
 Every value must occur verbatim within its quote.
 Every quote must occur verbatim within the supplied page text.
+If validation_feedback is supplied, correct the earlier candidate by copying
+an actual passage from page.text, including PDF line breaks and punctuation.
+Omit the field if no passage directly supports it.
 Return JSON only, without Markdown.
 """
 

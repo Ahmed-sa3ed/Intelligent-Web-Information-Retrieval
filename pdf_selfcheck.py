@@ -115,3 +115,56 @@ for body, expected in [(b"invalid", "signature"),
         except UnsupportedContentTypeError as exc:
             assert expected in str(exc), str(exc)
 print("PASS: malformed, image-only, and oversized PDFs fail with a useful reason")
+
+# PDF line wrapping can make a fluent model quotation differ from the bytes
+# extracted from the page. Retry once, then still require exact source text.
+from retrieval_pdf import parse_pdf
+EXACT = "Rosetta is scheduled to conduct anoth- er flyby of Lutetia on 10 July 2010."
+FLUENT = "Rosetta is scheduled to conduct another flyby of Lutetia on 10 July 2010."
+wrapped_pdf = parse_pdf(make_pdf(EXACT), PDF)
+
+class QuoteRepairModel:
+    def __init__(self, repair=True):
+        self.repair = repair
+        self.retries = 0
+        self.final_context = ""
+
+    def generate(self, messages):
+        request = json.loads(messages[-1]["content"])
+        if "request_to_analyze" in request:
+            return json.dumps({"required_fields": ["flyby_date"]})
+        if "page" in request:
+            if "10 July 2010" not in request["page"]["text"]:
+                return "{}"
+            if "validation_feedback" in request:
+                self.retries += 1
+            quote = EXACT if self.repair and "validation_feedback" in request else FLUENT
+            return json.dumps({"flyby_date": {"value": "10 July 2010",
+                                               "quote": quote, "confidence": .99}})
+        if "target_field" in request:
+            self.final_context = request["pages"][0]["text"]
+            return json.dumps({"page_index": 0, "answer": "10 July 2010",
+                               "quote": EXACT, "reason": "The passage supplies the date."})
+        return '{"link_index": null}'
+
+repair_model = QuoteRepairModel()
+with redirect_stdout(io.StringIO()):
+    repaired = agent.run_agent("What date was the Lutetia flyby scheduled?", PDF,
+                               repair_model, None, max_pages=1,
+                               fetch_page_fn=lambda _: wrapped_pdf)
+assert repair_model.retries == 1 and repaired["status"] == "answered"
+assert repaired["citations"][0]["page_number"] == 1
+assert repaired["citations"][0]["quote"] == EXACT
+print("PASS: PDF quote repair copies exact extracted text and retains page citation")
+
+long_text = "Irrelevant background. " * 300 + "\n[PDF page 2]\n" + EXACT
+long_pdf = {**wrapped_pdf, "text": long_text,
+            "pdf_pages": [{"number": 2, "text": EXACT}]}
+fallback_model = QuoteRepairModel(repair=False)
+with redirect_stdout(io.StringIO()):
+    fallback = agent.run_agent("What date was the Lutetia flyby scheduled?", PDF,
+                               fallback_model, None, max_pages=1,
+                               fetch_page_fn=lambda _: long_pdf)
+assert fallback_model.retries == 1 and EXACT in fallback_model.final_context
+assert fallback["status"] == "answered" and fallback["citations"][0]["page_number"] == 2
+print("PASS: final review sees relevant long-PDF text after an invalid candidate quote")
