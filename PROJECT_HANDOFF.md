@@ -113,5 +113,6 @@ catalog. Live rendered-site and model runs remain unverified in this session.
 - `requires_pdf` and `requires_conflict` in `run_agent_suite.py` demand a PDF
   page citation or a real conflict report in addition to answer accuracy.
 - `suite_selfcheck.py` verifies that an ordinary HTML answer cannot pass those
-  gates. `run_agent_suite.py --dry-run` enumerates 33 cases. Live model and
+  gates. `--feature pdf --feature conflict` selects exactly the ten new cases;
+  `run_agent_suite.py --dry-run` enumerates 33 cases. Live model and
   public-site runs are pending; report access failures and navigation misses.

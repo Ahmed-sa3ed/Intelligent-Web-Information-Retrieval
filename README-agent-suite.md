@@ -27,6 +27,7 @@ Useful options:
 - --only real: run thirty public website cases.
 - --case w3c_invention: run one named case.
 - --case archives_declaration_dates: test the two-date question alone.
+- --feature pdf --feature conflict: run only the ten new cases (or use one flag for five).
 - --backends original scrapling: compare HTML parsers on the same Scrapling HTTP fetcher.
 - --model MODEL_SLUG and --repeats 2: override JSON settings for one run.
 - --max-pages 6: allow up to six successfully fetched pages per case.
@@ -91,7 +92,8 @@ source-checked expected answers but have not been run with the account-backed
 model in this workspace. The agent may miss a linked contrast within the
 four-page navigation budget; that is a measured failure, not a passed case.
 Run one case with `--case pdf_irs_w9_backup_rate` or
-`--case conflict_mdn_307_method` before the full suite.
+`--case conflict_mdn_307_method`, then run all ten with
+`python run_agent_suite.py --feature pdf --feature conflict`.
 
 A website can change or block retrieval: inspect error and trace before
 deciding that a failing case is an agent regression. The comparison ignores

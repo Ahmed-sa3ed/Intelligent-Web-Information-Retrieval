@@ -310,6 +310,8 @@ def main(argv=None):
     parser.add_argument("--config", type=Path, default=PROJECT / "agent_suite.json")
     parser.add_argument("--only", choices=("all", "local", "real"), default="all")
     parser.add_argument("--case", action="append", help="Run one id; repeat for multiple cases.")
+    parser.add_argument("--feature", action="append", choices=("pdf", "conflict"),
+                        help="Run cases exercising this feature; repeat to combine them.")
     parser.add_argument("--model", help="Override model from JSON.")
     parser.add_argument("--backends", nargs="+", choices=BACKENDS,
                         help="Override backends from JSON.")
@@ -338,6 +340,9 @@ def main(argv=None):
         parser.error("--workers must be between 1 and 4.")
     cases = [case for case in config["cases"]
              if args.only == "all" or case["group"] == args.only]
+    if args.feature:
+        cases = [case for case in cases
+                 if any(case.get(f"requires_{feature}") for feature in args.feature)]
     if args.case:
         unknown = set(args.case) - {case["id"] for case in config["cases"]}
         if unknown:

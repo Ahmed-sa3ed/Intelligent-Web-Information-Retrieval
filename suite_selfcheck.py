@@ -101,6 +101,13 @@ print("PASS: PDF and conflict cases require feature evidence beyond the answer")
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from run_agent_suite import main
+from contextlib import redirect_stdout
+import io
+with redirect_stdout(io.StringIO()) as feature_plan:
+    assert main(["--feature", "pdf", "--feature", "conflict", "--dry-run"]) == 0
+planned = feature_plan.getvalue().split("Cases: ", 1)[1].splitlines()[0].split(", ")
+assert len(planned) == 10 and all(name.startswith(("pdf_", "conflict_")) for name in planned)
+print("PASS: feature filter selects exactly the ten new public-site cases")
 with TemporaryDirectory(prefix="suite-selfcheck-", dir=PROJECT) as scratch:
     assert Path(scratch).resolve().is_relative_to(PROJECT)
     with patch("run_agent_suite.read_suite",
